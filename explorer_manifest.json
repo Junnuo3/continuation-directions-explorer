@@ -1,0 +1,21 @@
+{
+ "demo_id": "nr_main_v1_explorer",
+ "created_at": "2026-10-23T19:06:05Z",
+ "run_id": "nr_main_v1",
+ "run_manifest_sha256": "015a8dccef871bc589ce35bac880dfd96826b8e6fd8b32abc61ab92d52c9dd11",
+ "run_config_id": "amt_nr_main_v1",
+ "analyses": {
+  "baseline": "analyses/nr_main_v1/rules_v3__agglo_v1",
+  "revised": "analyses/nr_main_v1/rules_v4__agglo_evd_v1"
+ },
+ "diagnostics": "nr_diagnostics_v1",
+ "soundfont": "assets/soundfonts/MuseScore_General.sf2",
+ "audio": {
+  "format": "mp3 48 kbps mono, fluidsynth",
+  "tail_s": 1.5,
+  "n_continuation_clips": 3177,
+  "n_prefix_clips": 50
+ },
+ "review_id": "nr_review_v1",
+ "learned_analysis": "nr_learned_v1"
+}

@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Continuation Directions Explorer</title>
+<style>
+:root{--bg:#fbfaf7;--panel:#fff;--ink:#1d1d1b;--muted:#6b6a65;--line:#e4e1d9;--accent:#2f6fb5;--warn:#c2571a;--chip:#f0eee8;
+--heat0:#f7f4ee;--heat1:#1f3d5c;--single:#9a978d}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#151514;--panel:#1e1e1c;--ink:#ecebe6;--muted:#a19f97;
+--line:#34332f;--accent:#7fb0e8;--warn:#f0965c;--chip:#2a2926;--heat0:#1e1e1c;--heat1:#cfe3f7;--single:#77756d}}
+:root[data-theme="dark"]{--bg:#151514;--panel:#1e1e1c;--ink:#ecebe6;--muted:#a19f97;--line:#34332f;--accent:#7fb0e8;--warn:#f0965c;
+--chip:#2a2926;--heat0:#1e1e1c;--heat1:#cfe3f7;--single:#77756d}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:1280px;margin:0 auto;padding:16px 16px 90px}
+h1{font-size:1.35rem;margin:0}h2{font-size:1.05rem;margin:0 0 8px}h3{font-size:.95rem;margin:0}
+.muted{color:var(--muted)}.small{font-size:.82rem}
+.controls{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin:12px 0;padding:10px 12px;background:var(--panel);
+border:1px solid var(--line);border-radius:10px}
+.controls label{display:flex;gap:6px;align-items:center}
+select,input,button{font:inherit;color:var(--ink)}
+select,button,input[type=number]{background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:4px 8px}
+button{cursor:pointer}button:hover{border-color:var(--accent)}
+button.on{border-color:var(--accent);box-shadow:inset 0 -2px 0 var(--accent)}
+.seg{display:inline-flex}.seg button{border-radius:0}.seg button:first-child{border-radius:7px 0 0 7px}.seg button:last-child{border-radius:0 7px 7px 0}
+input[type=range]{width:180px}
+.grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:14px}
+@media (max-width:900px){.grid{grid-template-columns:1fr}}
+section.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:14px;min-width:0}
+.note{border-left:3px solid var(--warn);padding:6px 10px;margin:8px 0;background:var(--chip);border-radius:0 6px 6px 0}
+svg{display:block;width:100%;height:auto;touch-action:manipulation}
+.pt{cursor:pointer}
+.chip{display:inline-block;background:var(--chip);border-radius:999px;padding:1px 8px;margin:2px 3px 2px 0;font-size:.8rem}
+.chip.d{font-weight:600;outline:1px solid var(--line)}
+.card{border:1px solid var(--line);border-radius:9px;padding:8px 10px;margin:8px 0}
+.card header{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.dot{width:12px;height:12px;border-radius:50%;display:inline-block;flex:none}
+.mem{cursor:pointer;font-family:ui-monospace,Menlo,monospace;font-size:.78rem}
+.mem.sel{outline:2px solid var(--accent)}
+table{border-collapse:collapse;width:100%}td,th{padding:3px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-weight:600;font-size:.82rem;color:var(--muted)}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+tr.blk{cursor:pointer}tr.blk:hover{background:var(--chip)}
+.bar{height:8px;background:var(--accent);border-radius:4px;min-width:1px}
+.mono{font-family:ui-monospace,Menlo,monospace;font-size:.78rem;white-space:pre}
+.slot{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;align-items:center}
+.ab{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--ink);color:var(--bg);font-weight:700;font-size:.75rem}
+.scroll{overflow-x:auto}
+canvas{display:block;max-width:100%}
+#np{position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid var(--line);padding:8px 16px;display:flex;gap:12px;align-items:center;z-index:5}
+.hide-blind{}
+body.blind .hide-blind{display:none!important}
+.legend{display:flex;flex-wrap:wrap;gap:2px 12px}.legend span{white-space:nowrap}
+.st0{}.st1{color:var(--accent)}.st2{color:var(--warn)}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>Continuation directions: listening explorer</h1>
+  <div class="muted small" id="sub"></div>
+</header>
+
+<div class="controls">
+  <label>Prefix <select id="prefixSel"></select></label>
+  <label><input type="checkbox" id="reviewOnly"> review subset only</label>
+  <span class="seg" role="group" aria-label="representation" id="methodSeg"></span>
+  <span class="seg" role="group" aria-label="AMT horizon" id="horizonSeg" style="display:none"><button data-h="amt_h4">4 beats</button><button data-h="amt_h8">8 beats</button><button data-h="amt_h16">16 beats</button></span>
+  <label>Threshold <input type="range" id="thr" min="0" max="0.8" step="0.005"><input id="thrNum" type="number" min="0" max="2" step="0.0005" style="width:80px"></label>
+  <button id="thrReset" title="reference threshold of the clustering config">reset to reference</button>
+  <label><input type="checkbox" id="blind"> hide cluster colours &amp; descriptions</label>
+  <label class="small">click plays <select id="clickMode"><option value="cont">continuation</option><option value="both">prefix → continuation</option><option value="none">nothing</option></select></label>
+</div>
+
+<div class="grid">
+  <div>
+    <section class="panel">
+      <h2>Map of continuations <span class="muted small" id="mapInfo"></span></h2>
+      <svg id="map" viewBox="0 0 600 520" aria-label="MDS map"></svg>
+      <div class="small muted legend" id="legend"></div>
+    </section>
+  </div>
+  <div>
+    <section class="panel" id="playerPanel">
+      <h2>Listen</h2>
+      <div class="row small" style="margin-bottom:6px"><button id="playPrefix">▶ prefix alone</button> <span class="muted" id="prefixInfo"></span></div>
+      <div id="slots"></div>
+      <div class="small muted">Click a point to fill slot A, then B (alternating). Sample IDs are shown with every playback.</div>
+    </section>
+    <section class="panel hide-blind" id="clusterPanel">
+      <h2>Clusters <span class="muted small" id="clInfo"></span></h2>
+      <div id="clusters"></div>
+    </section>
+  </div>
+</div>
+
+<section class="panel" id="pcaPanel" style="display:none">
+  <h2>Dataset overview: PCA of CLaMP3 embeddings <span class="muted small" id="pcaInfo"></span></h2>
+  <div class="scroll"><canvas id="pca" width="900" height="520"></canvas></div>
+  <div class="small muted" id="pcaHover">All continuations of all prefixes (L2-normalized CLaMP3 C2 embeddings), coloured by source prefix; the selected prefix is
+    drawn on top. Click a point to play it. This is an embedding overview, not evidence of direction clusters within a prefix.</div>
+</section>
+
+</main>
+<div id="np"><button id="stop">■ stop</button><span id="npText" class="small muted">nothing playing</span></div>
+
+<script src="explorer_core.js"></script>
+<script src="data/index.js"></script>
+<script>
+"use strict";
+const C = window.NRCore, IDX = window.NR_INDEX;
+const PAL = ["#2f6fb5","#c2571a","#2e8b57","#8e44ad","#b8860b","#d6336c","#1b9aaa","#6d6875","#7a9e2a","#e07a5f","#3d5a80","#a0522d"];
+const STATUS = ["known","silent","ambiguous"], WSTATUS = ["onsets","sustained only","silent"];
+const RANGE = {rules: [0, 0.8, 0.005], clamp3: [0, 0.5, 0.002], amt: [0, 0.15, 0.0005]};
+const S = {pid:null, method:IDX.method_order.includes("revised") ? "revised" : IDX.method_order[0], t:null, data:{}, A:null, B:null, next:"A",
+           labels:null, groups:null, cyc:{}, amt:"amt_h16"};
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt = (x, d=3) => x === null || x === undefined || Number.isNaN(x) ? "—" : (+x).toFixed(d);
+const kind = m => IDX.methods[m].kind;
+const dec = m => kind(m) === "amt" ? 4 : 3;
+
+// ---------------------------------------------------------------- audio
+const AE = {ctx:null, cache:new Map(), nodes:[], els:[], timers:[], tok:0, key:null};
+const WA = location.protocol.startsWith("http") && (window.AudioContext || window.webkitAudioContext);
+function buffer(url){
+  if(!AE.cache.has(url)) AE.cache.set(url, fetch(url).then(r => { if(!r.ok) throw new Error(url + " " + r.status); return r.arrayBuffer(); })
+    .then(b => AE.ctx.decodeAudioData(b)));
+  return AE.cache.get(url);
+}
+function stopAll(){
+  AE.tok++; AE.key = null; AE.nodes.forEach(n => { try{ n.stop(); }catch(e){} }); AE.nodes = [];
+  AE.els.forEach(a => a.pause()); AE.els = []; AE.timers.forEach(clearTimeout); AE.timers = [];
+  $("npText").textContent = "nothing playing";
+}
+// items: [{url, at}] (seconds after start). The continuation clip starts exactly at the cutoff when after the prefix.
+async function play(items, label){
+  const key = items.map(it => it.url + "@" + it.at).join("|");
+  if(AE.key === key){ stopAll(); return; }   // clicking what is playing again stops it
+  stopAll(); const tok = AE.tok; AE.key = key;
+  window.__nrLastPlay = items.map(it => ({url: it.url, at: it.at}));  // inspected by scripts/nr_browser_check.py
+  $("npText").innerHTML = "loading " + label;
+  try{
+    if(WA){
+      AE.ctx = AE.ctx || new (window.AudioContext || window.webkitAudioContext)(); await AE.ctx.resume();
+      const bufs = await Promise.all(items.map(it => buffer(it.url)));
+      if(tok !== AE.tok) return;
+      const t0 = AE.ctx.currentTime + 0.06; let end = 0;
+      items.forEach((it, i) => { const s = AE.ctx.createBufferSource(); s.buffer = bufs[i]; s.connect(AE.ctx.destination); s.start(t0 + it.at);
+        AE.nodes.push(s); end = Math.max(end, it.at + bufs[i].duration); });
+      AE.timers.push(setTimeout(() => { if(tok === AE.tok){ AE.key = null; $("npText").textContent = "finished: " + label.replace(/<[^>]+>/g, ""); } }, (end + 0.1) * 1000));
+    } else {
+      items.forEach((it, i) => { const a = new Audio(it.url); AE.els.push(a);
+        if(i === items.length - 1) a.onended = () => { if(tok === AE.tok) AE.key = null; };
+        if(it.at === 0) a.play(); else AE.timers.push(setTimeout(() => { if(tok === AE.tok) a.play(); }, it.at * 1000)); });
+    }
+    $("npText").innerHTML = "▶ " + label + (WA || items.length < 2 ? "" : " <span class='muted'>(file:// timer join is approximate; serve over http for an exact join)</span>");
+  }catch(e){ $("npText").textContent = "audio error: " + e.message; }
+}
+function cand(id){ return S.data[S.pid].candidates.find(c => c.id === id); }
+function playCand(id, mode){
+  const P = S.data[S.pid], c = cand(id);
+  if(!c || !c.audio){ $("npText").textContent = id + ": no audio (no notes)"; return; }
+  const lab = `<b class="mono">${esc(c.id)}</b> (attempt ${c.attempt}, seed ${c.seed})`;
+  if(mode === "both") play([{url:P.prefix_audio, at:0}, {url:c.audio, at:P.cutoff_s}], "prefix → continuation " + lab);
+  else play([{url:c.audio, at:0}], "continuation alone " + lab);
+}
+
+// ---------------------------------------------------------------- data
+function loadPrefix(pid){
+  return new Promise((res, rej) => {
+    if(S.data[pid]) return res(S.data[pid]);
+    window.NR_PREFIX = d => { S.data[d.prefix_id] = d; res(d); };
+    const s = document.createElement("script"); s.src = "data/" + pid + ".js"; s.onerror = () => rej(new Error("cannot load " + s.src));
+    document.head.appendChild(s);
+  });
+}
+function M(){ return S.data[S.pid].methods[S.method]; }
+function recompute(){
+  const m = M(), n = m ? m.ids.length : 0;
+  S.labels = n ? C.cut(m.Z, n, S.t) : [];
+  S.groups = C.groupsOf(S.labels);
+}
+function colorOf(k){ return S.groups[k].length === 1 ? null : PAL[k % PAL.length]; }
+
+// ---------------------------------------------------------------- map
+function drawMap(){
+  const m = M(), n = m.ids.length, svg = $("map"), W = 600, H = 520, pad = 28, blind = $("blind").checked;
+  if(!n){ svg.innerHTML = ""; $("mapInfo").textContent = "· no clustered samples"; return; }
+  const xs = m.mds.map(p => p[0]), ys = m.mds.map(p => p[1]);
+  const span = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys), 1e-9);
+  const cx = (Math.max(...xs) + Math.min(...xs)) / 2, cy = (Math.max(...ys) + Math.min(...ys)) / 2, sc = (Math.min(W, H) - 2 * pad) / span;
+  const X = i => W / 2 + (m.mds[i][0] - cx) * sc, Y = i => H / 2 - (m.mds[i][1] - cy) * sc;
+  const meds = new Set(blind ? [] : S.groups.filter(g => g.length > 1).map(g => C.medoid(m.D, n, g)));
+  let h = "";
+  for(let i = 0; i < n; i++){
+    const k = S.labels[i], col = blind ? "var(--muted)" : colorOf(k), id = m.ids[i], x = X(i), y = Y(i);
+    const fill = col || "none", stroke = col || "var(--single)";
+    const title = `<title>${esc(id)}${blind ? "" : " · C" + (k + 1) + (meds.has(i) ? " medoid" : "")}</title>`;
+    if(meds.has(i)) h += `<path class="pt" data-i="${i}" d="M${x} ${y - 9}L${x + 9} ${y}L${x} ${y + 9}L${x - 9} ${y}Z" fill="${fill}" stroke="var(--ink)" stroke-width="2">${title}</path>`;
+    else h += `<circle class="pt" data-i="${i}" cx="${x}" cy="${y}" r="5.5" fill="${fill}" stroke="${stroke}" stroke-width="1.6">${title}</circle>`;
+  }
+  for(const [slot, id] of [["A", S.A], ["B", S.B]]){
+    const i = m.ids.indexOf(id); if(i < 0) continue;
+    h += `<circle cx="${X(i)}" cy="${Y(i)}" r="12" fill="none" stroke="var(--ink)" stroke-width="2"/><text x="${X(i) + 13}" y="${Y(i) - 9}" font-size="13" font-weight="700" fill="var(--ink)">${slot}</text>`;
+  }
+  svg.innerHTML = h;
+  svg.querySelectorAll(".pt").forEach(el => el.addEventListener("click", () => pick(m.ids[+el.dataset.i], true)));
+  const nValid = S.data[S.pid].candidates.filter(c => c.valid).length;
+  $("mapInfo").textContent = `· ${IDX.methods[S.method].label} · ${n} of ${nValid} valid samples clustered${m.excluded.length ? ` (${m.excluded.length} excluded or failed, see 'Not on the map')` : ""} · stress-1 ${fmt(m.stress, 3)}`;
+  const nc = S.groups.filter(g => g.length > 1).length, ns = S.groups.filter(g => g.length === 1).length;
+  $("legend").innerHTML = blind ? "<span>colours hidden</span>" :
+    `<span>◆ medoid</span><span>● cluster member (colour = cluster)</span><span>○ singleton</span><span>${nc} clusters of ≥2, ${ns} singletons at threshold ${fmt(S.t, dec(S.method))}</span>`;
+}
+
+// ---------------------------------------------------------------- heatmap + histogram
+// ---------------------------------------------------------------- clusters
+function renderClusters(){
+  const P = S.data[S.pid], m = M(), n = m.ids.length, meta = IDX.methods[S.method];
+  const all = m.ids.map(id => m.tags[id] || []), nValid = P.candidates.filter(c => c.valid).length;
+  const big = S.groups.map((g, k) => ({g, k})).filter(x => x.g.length > 1), singles = S.groups.map((g, k) => ({g, k})).filter(x => x.g.length === 1);
+  $("clInfo").textContent = `· ${big.length} clusters of ≥2 + ${singles.length} singletons · threshold ${fmt(S.t, dec(S.method))} (reference ${meta.threshold})`;
+  let h = "";
+  for(const {g, k} of big){
+    const med = C.medoid(m.D, n, g), desc = C.describe(g.map(i => all[i]), all, meta.min_prevalence, meta.min_lift);
+    h += `<div class="card"><header><span class="dot" style="background:${colorOf(k)}"></span><b>C${k + 1}</b>
+      <span>${g.length} samples · ${g.length}/${nValid} = ${(100 * g.length / nValid).toFixed(1)}% of valid samples</span></header>
+      <div class="small" style="margin:4px 0"><span class="muted">${m.tags_external ? "external annotation" : "heuristic description"}:</span> ${desc.length ? desc.map(d => `<span class="chip${d.distinctive ? " d" : ""}" title="${Math.round(100 * d.prevalence)}% of members vs ${Math.round(100 * d.pool_prevalence)}% of pool">${esc(d.tag)} ${Math.round(100 * d.prevalence)}%</span>`).join("") : "<i>no tag shared by ≥50%</i>"}</div>
+      <div class="small"><button data-play="${m.ids[med]}">▶ medoid</button> <button data-cyc="${k}">▶ another member</button>
+      <span class="muted">medoid</span> <span class="mem" data-sel="${m.ids[med]}">${m.ids[med].split("__")[1]}</span></div>
+      <div class="small" style="margin-top:4px">${g.map(i => `<span class="mem chip${[S.A, S.B].includes(m.ids[i]) ? " sel" : ""}" data-sel="${m.ids[i]}" title="${esc(m.ids[i])}">${m.ids[i].split("__")[1]}</span>`).join("")}</div></div>`;
+  }
+  if(singles.length) h += `<div class="card"><header><span class="dot" style="border:1.6px solid var(--single)"></span><b>Singletons</b> <span>${singles.length} samples, each its own cluster</span></header>
+    <div class="small">${singles.map(({g}) => `<span class="mem chip${[S.A, S.B].includes(m.ids[g[0]]) ? " sel" : ""}" data-sel="${m.ids[g[0]]}">${m.ids[g[0]].split("__")[1]}</span>`).join("")}</div></div>`;
+  $("clusters").innerHTML = h;
+  bindButtons($("clusters"));
+}
+function bindButtons(root){
+  root.querySelectorAll("[data-play]").forEach(b => b.onclick = () => { pick(b.dataset.play, false); playCand(b.dataset.play, $("clickMode").value === "both" ? "both" : "cont"); });
+  root.querySelectorAll("[data-playboth]").forEach(b => b.onclick = () => playCand(b.dataset.playboth, "both"));
+  root.querySelectorAll("[data-sel]").forEach(b => b.onclick = () => pick(b.dataset.sel, true));
+  root.querySelectorAll("[data-cyc]").forEach(b => b.onclick = () => {
+    const m = M(), n = m.ids.length, g = S.groups[+b.dataset.cyc], med = C.medoid(m.D, n, g), others = g.filter(i => i !== med);
+    const key = S.pid + S.method + S.t + b.dataset.cyc; S.cyc[key] = ((S.cyc[key] ?? -1) + 1) % others.length;
+    const id = m.ids[others[S.cyc[key]]]; pick(id, false); playCand(id, $("clickMode").value === "both" ? "both" : "cont"); });
+}
+
+// ---------------------------------------------------------------- selection + pair inspector
+function pick(id, playIt){
+  if(S.A === id || S.B === id){ /* already selected: just play */ }
+  else if(S.next === "A"){ S.A = id; S.next = "B"; } else { S.B = id; S.next = "A"; }
+  if(playIt && $("clickMode").value !== "none") playCand(id, $("clickMode").value);
+  renderSel();
+}
+function whyMissing(id){
+  const m = M(), e = m.excluded.find(x => x.candidate_id === id), c = cand(id);
+  if(e) return e.reason + (e.unsupported_blocks ? " (" + e.unsupported_blocks.join(", ") + ")" : "");
+  return c && !c.valid ? "generation " + c.status : "not clustered by this method";
+}
+function slotHtml(slot, id){
+  if(!id) return `<span class="ab">${slot}</span><span class="muted">empty</span>`;
+  const c = cand(id), m = M(), i = m.ids.indexOf(id), blind = $("blind").checked;
+  const k = i >= 0 ? S.labels[i] : null, tags = (m.tags[id] || []);
+  return `<span class="ab">${slot}</span><div><span class="mono">${esc(id)}</span> <span class="muted">attempt ${c.attempt} · seed ${c.seed}${c.dup_of ? " · duplicate of " + esc(c.dup_of) : ""}</span>
+    ${i < 0 ? `<span class="chip st2">not on this map: ${esc(whyMissing(id))}</span>` : (!blind ? `<span class="chip">C${k + 1}${S.groups[k].length === 1 ? " (singleton)" : ""}</span>` : "")}<br>
+    <button data-play="${id}">▶ continuation</button> <button data-playboth="${id}">▶ prefix → continuation</button>
+    ${blind ? "" : `<div class="hide-blind small muted">${m.tags_external ? "external annotation: " : ""}${tags.map(t => `<span class="chip">${esc(t)}</span>`).join("")}</div>`}</div>`;
+}
+function renderSel(){
+  $("slots").innerHTML = `<div class="slot">${slotHtml("A", S.A)}${slotHtml("B", S.B)}</div>`;
+  $("slots").querySelectorAll("[data-play]").forEach(b => b.onclick = () => playCand(b.dataset.play, "cont"));
+  bindButtons($("slots"));
+  drawMap(); renderClusters(); drawPCA();
+}
+function cssVar(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+// ---------------------------------------------------------------- PCA overview (CLaMP3, all prefixes)
+const PCA = {data:null, loading:false};
+function drawPCA(){
+  if(!IDX.has_pca) return;
+  $("pcaPanel").style.display = "";
+  if(!PCA.data){
+    if(!PCA.loading){ PCA.loading = true; const s = document.createElement("script"); s.src = "data/pca.js";
+      s.onload = () => { PCA.data = window.NR_PCA; drawPCA(); }; document.head.appendChild(s); }
+    return;
+  }
+  const P = PCA.data, cv = $("pca"), g = cv.getContext("2d"), W = cv.width, H = cv.height, pad = 20;
+  const xs = P.points.map(p => p[0]), ys = P.points.map(p => p[1]);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const X = x => pad + (x - x0) / (x1 - x0) * (W - 2 * pad), Y = y => H - pad - (y - y0) / (y1 - y0) * (H - 2 * pad);
+  const pidx = Object.fromEntries(P.prefix_ids.map((p, i) => [p, i])), col = p => `hsl(${(pidx[p] * 137.5) % 360} 55% 55%)`;
+  g.clearRect(0, 0, W, H);
+  const pidOf = c => c.split("__")[0];
+  const cur = P.points.filter(p => pidOf(p[2]) === S.pid);
+  g.globalAlpha = 0.6;
+  for(const p of P.points){ if(pidOf(p[2]) === S.pid) continue; g.fillStyle = col(pidOf(p[2])); g.beginPath(); g.arc(X(p[0]), Y(p[1]), 2.5, 0, 7); g.fill(); }
+  g.globalAlpha = 1; g.strokeStyle = cssVar("--ink");
+  for(const p of cur){ g.fillStyle = col(S.pid); g.beginPath(); g.arc(X(p[0]), Y(p[1]), 4, 0, 7); g.fill(); g.stroke(); }
+  $("pcaInfo").textContent = `· ${P.points.length} continuations, ${P.prefix_ids.length} prefixes · explained variance PC1 ${(100 * P.explained[0]).toFixed(1)}%, PC2 ${(100 * P.explained[1]).toFixed(1)}%`;
+  const near = e => { const r = cv.getBoundingClientRect(), mx = (e.clientX - r.left) / r.width * W, my = (e.clientY - r.top) / r.height * H;
+    let best = null, bd = 64; for(const p of P.points){ const d = (X(p[0]) - mx) ** 2 + (Y(p[1]) - my) ** 2; if(d < bd){ bd = d; best = p; } } return best; };
+  cv.onmousemove = e => { const p = near(e); if(p) $("pcaHover").textContent = `${p[2]} (prefix ${pidOf(p[2])}) — click to play`; };
+  cv.onclick = e => { const p = near(e); if(!p) return; const pid = pidOf(p[2]);
+    play([{url: `audio/${pid}/${p[2]}.mp3`, at: 0}], `continuation alone <b class="mono">${esc(p[2])}</b> (from the PCA overview)`); };
+}
+
+// ---------------------------------------------------------------- others + review + about
+// ---------------------------------------------------------------- wiring
+function setMethod(m){
+  if(!S.data[S.pid].methods[m]){ $("npText").textContent = `${IDX.methods[m].label} is not available for this prefix yet`; return; }
+  S.method = m; if(kind(m) === "amt") S.amt = m;
+  const [lo, hi, step] = RANGE[kind(m)] || RANGE.rules, thr = $("thr");
+  thr.min = lo; thr.max = hi; thr.step = step; $("thrNum").step = step;
+  S.t = IDX.methods[m].threshold;
+  document.querySelectorAll("#methodSeg button").forEach(b => b.classList.toggle("on", b.dataset.m === m || (b.dataset.m === "amt" && kind(m) === "amt")));
+  $("horizonSeg").style.display = kind(m) === "amt" ? "" : "none";
+  document.querySelectorAll("#horizonSeg button").forEach(b => b.classList.toggle("on", b.dataset.h === m));
+  refresh();
+}
+function setT(t){ S.t = Math.max(0, +t); $("thr").value = S.t; $("thrNum").value = S.t.toFixed(dec(S.method) + 1); recompute(); renderSel(); }
+function refresh(){
+  const P = S.data[S.pid];
+  if(!P.methods[S.method]) S.method = P.methods.revised ? "revised" : Object.keys(P.methods)[0];
+  $("thr").value = S.t; $("thrNum").value = S.t.toFixed(dec(S.method) + 1);
+  $("prefixInfo").textContent = `${P.prefix_id} · ${P.song_name || ""}${P.artist ? " (" + P.artist + ")" : ""} · ${P.tempo_bpm} bpm · 16-beat prefix (windows ${P.windows.join("–")}), cutoff ${P.cutoff_s.toFixed(2)} s`;
+  $("sub").textContent = `${IDX.prefixes.length} prefixes · ${IDX.method_order.length} views (${IDX.method_order.map(m => IDX.methods[m].label).join(", ")}) · ${P.candidates.length} attempts for this prefix`;
+  document.querySelectorAll("#methodSeg button").forEach(b => { const ok = b.dataset.m === "amt" ? !!P.methods[S.amt] : !!P.methods[b.dataset.m]; b.disabled = !ok; });
+  recompute(); renderSel();
+}
+async function setPrefix(pid){
+  stopAll(); S.pid = pid; S.A = S.B = null; S.next = "A";
+  try{ await loadPrefix(pid); }catch(e){ $("sub").textContent = e.message; return; }
+  if(!S.data[pid].methods[S.method]) S.method = "revised";
+  setMethod(S.method);
+}
+function fillPrefixes(){
+  const only = $("reviewOnly").checked, sel = $("prefixSel"), cur = S.pid;
+  sel.innerHTML = IDX.prefixes.filter(p => !only || p.review).map(p => `<option value="${p.prefix_id}">${p.review ? "★ " : ""}${p.prefix_id} · ${esc(p.song_name || "")}</option>`).join("");
+  if(cur && [...sel.options].some(o => o.value === cur)) sel.value = cur; else setPrefix(sel.value);
+}
+(function buildMethodButtons(){
+  const seg = $("methodSeg"), seen = new Set();
+  for(const m of IDX.method_order){
+    const key = kind(m) === "amt" ? "amt" : m; if(seen.has(key)) continue; seen.add(key);
+    const b = document.createElement("button"); b.dataset.m = key; b.textContent = key === "amt" ? "AMT trajectories" : IDX.methods[m].label;
+    b.onclick = () => setMethod(key === "amt" ? S.amt : key); seg.appendChild(b);
+  }
+  document.querySelectorAll("#horizonSeg button").forEach(b => b.onclick = () => setMethod(b.dataset.h));
+})();
+$("prefixSel").onchange = e => setPrefix(e.target.value);
+$("reviewOnly").onchange = fillPrefixes;
+$("thr").oninput = e => setT(e.target.value); $("thrNum").onchange = e => setT(e.target.value);
+$("thrReset").onclick = () => setT(IDX.methods[S.method].threshold);
+$("blind").onchange = () => { document.body.classList.toggle("blind", $("blind").checked); renderSel(); };
+$("playPrefix").onclick = () => { const P = S.data[S.pid]; play([{url:P.prefix_audio, at:0}], "prefix alone " + esc(P.prefix_id)); };
+$("stop").onclick = stopAll;
+S.t = IDX.methods[S.method].threshold;
+fillPrefixes();
+</script>
+</body>
+</html>
