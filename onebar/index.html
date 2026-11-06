@@ -5,108 +5,158 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>One-Bar Continuations</title>
 <style>
-:root{--bg:#fbfaf7;--panel:#fff;--ink:#1d1d1f;--muted:#6b6b70;--line:#e3e1db;--accent:#2f5d8a;--chip:#f1efe9;--warn:#9a5b00}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161618;--panel:#1f1f22;--ink:#ececee;--muted:#a0a0a8;--line:#34343a;--accent:#8fb8e3;--chip:#2a2a2f;--warn:#e0a24a}}
-:root[data-theme="dark"]{--bg:#161618;--panel:#1f1f22;--ink:#ececee;--muted:#a0a0a8;--line:#34343a;--accent:#8fb8e3;--chip:#2a2a2f;--warn:#e0a24a}
+:root{--bg:#fbfaf7;--panel:#fff;--ink:#1d1d1f;--muted:#6b6b70;--line:#e3e1db;--accent:#2f5d8a;--chip:#f1efe9;--rare:#b4b4b8}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161618;--panel:#1f1f22;--ink:#ececee;--muted:#a0a0a8;--line:#34343a;--accent:#8fb8e3;--chip:#2a2a2f;--rare:#6b6b72}}
+:root[data-theme="dark"]{--bg:#161618;--panel:#1f1f22;--ink:#ececee;--muted:#a0a0a8;--line:#34343a;--accent:#8fb8e3;--chip:#2a2a2f;--rare:#6b6b72}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
-header{padding:16px 16px 6px;max-width:1200px;margin:0 auto}
+.wrap{max-width:1240px;margin:0 auto;padding:0 16px}
+header{padding:16px 0 4px}
 h1{font-size:19px;margin:0 0 4px}
 .sub{color:var(--muted);font-size:13px}
 .sub a{color:var(--accent)}
-nav{max-width:1200px;margin:8px auto 0;padding:0 16px;display:flex;gap:6px;flex-wrap:wrap}
-nav button{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:7px;padding:6px 12px;font:inherit;cursor:pointer}
-nav button.on{background:var(--accent);color:var(--bg);border-color:var(--accent)}
-main{max-width:1200px;margin:0 auto;padding:12px 16px 40px}
-.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:6px 0}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
 select{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:5px 8px;font:inherit;max-width:100%}
-.muted{color:var(--muted)}
-.small{font-size:12.5px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;margin-top:10px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:10px 12px}
-.card h3{font-size:15px;margin:0;display:flex;gap:8px;align-items:baseline}
-.card h3 .share{margin-left:auto;color:var(--muted);font-weight:400;font-size:13px;white-space:nowrap}
-.bar{height:4px;border-radius:2px;background:var(--accent);margin:6px 0 8px}
-.chips{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0}
-.chip{background:var(--chip);border:1px solid var(--line);border-radius:10px;padding:0 7px;font-size:12px}
-.warn{color:var(--warn);font-size:12px}
-button.play{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:6px;padding:2px 9px;font:inherit;font-size:12.5px;cursor:pointer}
-button.play.on{border-color:var(--accent);color:var(--accent)}
-details summary{cursor:pointer;color:var(--accent);font-size:12.5px}
-details ul{margin:4px 0 0;padding-left:18px;font-size:12.5px;color:var(--muted)}
-table{border-collapse:collapse;width:100%;font-size:13px}
-td,th{border-bottom:1px solid var(--line);padding:5px 6px;text-align:left;vertical-align:top}
-th{color:var(--muted);font-weight:500}
-.pat{margin-bottom:14px}
-.pat h3{font-size:15px;margin:0 0 2px}
-.scroll{overflow-x:auto}
-footer{max-width:1200px;margin:0 auto;padding:0 16px 30px;color:var(--muted);font-size:12.5px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.seg button{border:0;background:var(--panel);color:var(--ink);padding:5px 12px;font:inherit;cursor:pointer}
+.seg button.on{background:var(--accent);color:var(--bg)}
+button.b{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:6px;padding:4px 10px;font:inherit;font-size:13px;cursor:pointer}
+label{font-size:13px;color:var(--muted)}
+.layout{display:grid;grid-template-columns:minmax(300px,560px) 1fr;gap:16px;padding:12px 0 30px}
+@media (max-width:860px){.layout{grid-template-columns:1fr}}
+.mapbox{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:6px;position:sticky;top:8px;align-self:start}
+svg{width:100%;height:auto;display:block}
+svg circle{cursor:pointer}
+.now{font-size:12.5px;color:var(--muted);padding:4px 4px 2px;min-height:20px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:9px 11px;margin-bottom:8px}
+.card.sel{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.ch{display:flex;align-items:center;gap:8px;cursor:pointer}
+.sw{width:12px;height:12px;border-radius:3px;flex:none}
+.name{font-weight:600}
+.size{margin-left:auto;color:var(--muted);font-size:12.5px;white-space:nowrap}
+.members{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px}
+.m{border:1px solid var(--line);background:var(--chip);color:var(--ink);border-radius:5px;padding:1px 6px;font:12px ui-monospace,SFMono-Regular,Menlo,monospace;cursor:pointer}
+.m.rep{border-color:var(--ink);font-weight:600}
+.m.on{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.note{color:var(--muted);font-size:12.5px}
 </style>
 </head>
 <body>
+<div class="wrap">
 <header>
-  <h1>One-bar continuations: clusters and names</h1>
+  <h1>One-bar continuations: named clusters</h1>
   <div class="sub" id="sub"></div>
 </header>
-<main id="main"></main>
-<footer id="foot"></footer>
-<audio id="au" preload="none"></audio>
+<div class="controls">
+  <select id="psel"></select>
+  <span class="seg" id="mseg"></span>
+  <label><input type="checkbox" id="lead" checked> play the last prefix bar first</label>
+  <button class="b" id="pfx">▶ whole prefix</button>
+  <button class="b" id="stop">■ stop</button>
+</div>
+<div class="layout">
+  <div class="mapbox"><svg id="map" viewBox="0 0 500 500"></svg><div class="now" id="now">Click a point or a member to listen.</div></div>
+  <div id="clusters"></div>
+</div>
+</div>
 <script src="data.js"></script>
 <script>
 "use strict";
 const D = window.OB1, $ = id => document.getElementById(id);
 const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
-const pct = x => x == null ? "–" : Math.round(100 * x) + "%";
-const au = $("au");
-let playing = null;
-function play(btn) {
-  const src = btn.dataset.src;
-  if (playing === btn) { au.pause(); btn.classList.remove("on"); playing = null; return; }
-  if (playing) playing.classList.remove("on");
-  au.src = src; au.currentTime = 0; au.play(); btn.classList.add("on"); playing = btn;
-}
-au.onended = () => { if (playing) playing.classList.remove("on"); playing = null; };
-document.body.addEventListener("click", e => { const b = e.target.closest("button.play"); if (b) play(b); });
-const pb = (src, label, title) => `<button class="play" data-src="${src}" title="${esc(title || "")}">▶ ${esc(label)}</button>`;
+const PAL = ["#4e79a7", "#f28e2b", "#59a14f", "#e15759", "#b07aa1", "#76b7b2", "#edc948", "#9c755f", "#ff9da7", "#86bcb6"];
+const rareColor = () => getComputedStyle(document.documentElement).getPropertyValue("--rare").trim();
+const col = k => k < 0 ? rareColor() : PAL[k % PAL.length];
+const att = i => "a" + String(P.attempts[i]).padStart(3, "0");
+let P = D.prefixes[0], M = "rules", focus = null, current = null;
 
-$("sub").innerHTML = `${D.prefixes.length} POP909 prefixes; 512 generated one-bar continuations each (1024 for pop909-839). `
-  + `Generator: ${esc(D.model)}. Clusters: rules features within each prefix. Names: ${esc(D.namer)} from deterministic evidence. `
-  + `Each ▶ plays the last prefix bar, then the continuation. <a href="../index.html">16-beat explorer</a>`;
-$("foot").innerHTML = `Names and descriptions: written by ${esc(D.namer)} from facts computed for each prefix's clusters (shared properties, differences between clusters, `
-  + `changes vs the last prefix bar, one example); “evidence cited” lists the facts it used. Not checked by listening; review flags mark wording the automatic checks found questionable. `
-  + `Chips: fixed rules on all members of a cluster. “copies bar k” = at least half the members share ≥ 50% of exact notes with prefix bar k; `
-  + `chord = most common rule-estimated chord in beats 1–2 (Roman numeral in the prefix's estimated key), and whether it holds the prefix's last chord, returns to another prefix chord or is new; `
-  + `density, register and rhythm compare the cluster's medians with the last prefix bar. Shares are proportions of samples under top-p 0.98 sampling. Built ${esc(D.created_at.slice(0, 10))}.`;
+$("sub").innerHTML = `${D.n_prefixes} POP909 prefixes × 64 generated one-bar continuations (three prefixes have 54–59; ${D.n_samples} in total). `
+  + `Generator: ${esc(D.model)}. Clusters per prefix and method; titles by ${esc(D.namer)}. The map places similar continuations close together. `
+  + `<a href="../index.html">16-beat explorer</a>`;
+$("psel").innerHTML = D.prefixes.map((p, i) => `<option value="${i}">${esc(p.title)} · ${esc(p.key || "")} · ${p.tempo} bpm (${p.id})</option>`).join("");
+$("mseg").innerHTML = Object.entries(D.prefixes[0].methods).map(([m, x]) => `<button data-m="${m}">${esc(x.label)}</button>`).join("");
 
-// ------------------------------------------------------------ prefixes
-let curPid = D.prefixes[0].prefix_id;
-function prefixesView() {
-  const p = D.prefixes.find(x => x.prefix_id === curPid);
-  const opts = D.prefixes.map(x => `<option value="${x.prefix_id}" ${x.prefix_id === curPid ? "selected" : ""}>${esc(x.title)} · ${esc(x.key || "")} · ${x.tempo} bpm (${x.prefix_id})</option>`).join("");
-  let h = `<div class="row"><select id="psel">${opts}</select>${pb(p.prefix_clip, "whole prefix")}</div>`
-    + `<div class="row small muted">${p.n} samples · ${p.groups.length} rules clusters (effective choices ${p.eff.toFixed(1)}) · largest ${pct(p.dominant)} · rare ${pct(p.rare)} · CLaMP3 ${p.k.clamp3} · AMT ${p.k.amt} clusters</div>`
-    + (p.summary ? `<div class="row small">${esc(p.summary)}</div>` : "")
-    + (p.names_valid === false ? `<div class="warn">LLM output failed the format check (${esc((p.names_errors || []).join("; "))}); names shown as returned.</div>` : "")
-    + `<div class="grid">`;
-  p.groups.forEach((g, i) => {
-    h += `<div class="card"><h3><span>${esc(g.name || g.group)}</span><span class="share">${g.group} · ${pct(g.share)}</span></h3>`
-      + `<div class="bar" style="width:${Math.max(4, 100 * g.share)}%"></div>`
-      + (g.description ? `<div>${esc(g.description)}</div>` : "")
-      + `<div class="chips"><span class="chip">${esc(g.reuse)}</span><span class="chip">${esc(g.harmony)} · ${esc(g.relation)}</span>`
-      + `<span class="chip">${esc(g.density)}</span><span class="chip">${esc(g.register)}</span><span class="chip">${esc(g.rhythm)}</span>`
-      + `</div>`
-      + (g.flags.length ? `<div class="warn">review flag: ${g.flags.map(esc).join(" · ")}</div>` : "")
-      + `<div class="row">${g.clips.map((c, j) => pb(c, j ? String(j) : "representative")).join("")}</div>`
-      + (g.evidence.length ? `<details><summary>evidence cited (${g.evidence.length})</summary><ul>${g.evidence.map(e => `<li>${esc(e)}</li>`).join("")}</ul></details>` : "")
-      + `</div>`;
-  });
-  return h + `</div>`;
+// ---------------------------------------------------------------- audio: last prefix bar, then the continuation at the barline
+const player = {
+  ctx: null, cache: new Map(), live: [], timers: [], els: [],
+  buf(url) {
+    if (!this.cache.has(url)) this.cache.set(url, fetch(url).then(r => { if (!r.ok) throw new Error(url); return r.arrayBuffer(); }).then(b => this.ctx.decodeAudioData(b)));
+    return this.cache.get(url);
+  },
+  stop() {
+    this.live.forEach(s => { try { s.stop(); } catch (e) {} }); this.live = [];
+    this.timers.forEach(clearTimeout); this.timers = []; this.els.forEach(a => a.pause()); this.els = [];
+  },
+  async play(urls, offsets) {
+    this.stop();
+    try {
+      if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      await this.ctx.resume();
+      const bufs = await Promise.all(urls.map(u => this.buf(u)));
+      const t0 = this.ctx.currentTime + 0.05;
+      bufs.forEach((b, i) => { const s = this.ctx.createBufferSource(); s.buffer = b; s.connect(this.ctx.destination); s.start(t0 + offsets[i]); this.live.push(s); });
+      window.__obPlay = {urls, offsets, durations: bufs.map(b => b.duration)};
+    } catch (e) {  // file:// cannot fetch: timed HTML audio
+      urls.forEach((u, i) => this.timers.push(setTimeout(() => { const a = new Audio(u); a.play(); this.els.push(a); }, 1000 * offsets[i])));
+    }
+  }
+};
+const clipOf = i => `audio/${P.id}/${att(i)}.mp3`;
+function playCand(i) {
+  current = i;
+  const lead = $("lead").checked;
+  player.play(lead ? [`audio/${P.id}/lastbar.mp3`, clipOf(i)] : [clipOf(i)], lead ? [0, P.bar_s] : [0]);
+  const x = P.methods[M], k = x.labels[i];
+  $("now").innerHTML = `▶ ${att(i)} · ${k == null ? "not placed by this method" : k < 0 ? "rare" : esc(x.groups[k].name)}`;
+  drawMap(); drawClusters();
 }
+
+// ---------------------------------------------------------------- map
+function drawMap() {
+  const x = P.methods[M], pts = x.xy.map((p, i) => [p, i]).filter(([p]) => p);
+  const xs = pts.map(([p]) => p[0]), ys = pts.map(([p]) => p[1]);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const s = 440 / Math.max(x1 - x0, y1 - y0, 1e-9), ox = 250 - (x0 + x1) / 2 * s, oy = 250 - (y0 + y1) / 2 * s;
+  const meds = new Set(x.groups.map(g => g.medoid));
+  let h = "";
+  for (const [p, i] of pts) {
+    const k = x.labels[i], fade = focus != null && k !== focus;
+    const name = k < 0 ? "rare" : x.groups[k].name;
+    h += `<circle data-i="${i}" cx="${(ox + p[0] * s).toFixed(1)}" cy="${(oy + p[1] * s).toFixed(1)}" r="${meds.has(i) ? 7.5 : 5.5}" fill="${col(k)}" `
+      + `fill-opacity="${fade ? 0.18 : 0.9}" stroke="${i === current || meds.has(i) ? "var(--ink)" : "none"}" stroke-width="${i === current ? 3 : 1.5}">`
+      + `<title>${esc(name)} · ${att(i)}</title></circle>`;
+  }
+  $("map").innerHTML = h;
+}
+$("map").onclick = e => { const c = e.target.closest("circle"); if (c) playCand(Number(c.dataset.i)); };
+
+// ---------------------------------------------------------------- clusters
+function drawClusters() {
+  const x = P.methods[M];
+  const members = k => x.labels.map((l, i) => [l, i]).filter(([l]) => l === k).map(([, i]) => i);
+  const chip = (i, rep) => `<span class="m ${rep ? "rep" : ""} ${i === current ? "on" : ""}" data-i="${i}" title="${rep ? "representative" : ""}">${att(i)}</span>`;
+  let h = x.groups.map((g, k) => `<div class="card ${focus === k ? "sel" : ""}"><div class="ch" data-k="${k}"><span class="sw" style="background:${col(k)}"></span>`
+    + `<span class="name">${esc(g.name)}</span><span class="size">${g.size} · ${Math.round(100 * g.share)}%</span></div>`
+    + `<div class="members">${[g.medoid, ...members(k).filter(i => i !== g.medoid)].map((i, j) => chip(i, j === 0)).join("")}</div></div>`).join("");
+  const rare = members(-1), excl = x.labels.filter(l => l == null).length;
+  if (rare.length) h += `<div class="card ${focus === -1 ? "sel" : ""}"><div class="ch" data-k="-1"><span class="sw" style="background:${col(-1)}"></span><span class="name">rare</span>`
+    + `<span class="size">${rare.length} · ${Math.round(100 * rare.length / P.n)}%</span></div><div class="members">${rare.map(i => chip(i, false)).join("")}</div></div>`;
+  if (excl) h += `<div class="note">${excl} continuation(s) not placed by this method.</div>`;
+  $("clusters").innerHTML = h;
+}
+$("clusters").onclick = e => {
+  const m = e.target.closest(".m"); if (m) { playCand(Number(m.dataset.i)); return; }
+  const c = e.target.closest(".ch"); if (c) { const k = Number(c.dataset.k); focus = focus === k ? null : k; drawMap(); drawClusters(); }
+};
 
 function render() {
-  $("main").innerHTML = prefixesView();
-  const s = $("psel"); if (s) s.onchange = () => { curPid = s.value; if (playing) { au.pause(); playing = null; } render(); };
+  document.querySelectorAll("#mseg button").forEach(b => b.classList.toggle("on", b.dataset.m === M));
+  drawMap(); drawClusters();
 }
+$("psel").onchange = () => { P = D.prefixes[Number($("psel").value)]; focus = null; current = null; player.stop(); $("now").textContent = "Click a point or a member to listen."; render(); };
+$("mseg").onclick = e => { const m = e.target.dataset.m; if (m) { M = m; focus = null; render(); } };
+$("pfx").onclick = () => player.play([`audio/${P.id}/prefix.mp3`], [0]);
+$("stop").onclick = () => player.stop();
 render();
 </script>
 </body>

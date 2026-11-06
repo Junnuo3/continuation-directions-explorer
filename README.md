@@ -8,7 +8,6 @@ cluster descriptions are heuristic / external rule annotations; listening judgem
 
 ## One-bar continuations (`onebar/`)
 
-512 generated one-bar continuations for each of 19 prefixes (1024 for pop909-839), clustered per prefix with the
-rules features. Each cluster has a name and description from Qwen3-32B, written from facts computed for that prefix's
-clusters, plus chips from fixed rules (copies a prefix bar, opening-chord relation, density / register / rhythm vs the
-last prefix bar). Each clip plays the last prefix bar, then the continuation.
+The same 50 POP909 prefixes with 64 generated one-bar continuations each (three prefixes have 54-59; 3,177 in total).
+Per prefix and method (Rules / CLaMP3 / AMT): clusters on a 2-D map, cluster titles written by Qwen3-32B, and
+click-to-listen (the last prefix bar, then the continuation). Titles are still being added for some clusters.
