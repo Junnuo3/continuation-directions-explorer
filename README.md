@@ -9,10 +9,6 @@ cluster descriptions are heuristic / external rule annotations; listening judgem
 ## One-bar continuations (`onebar/`)
 
 512 generated one-bar continuations for each of 19 prefixes (1024 for pop909-839), clustered per prefix with the
-rules features; clusters named by Qwen3-32B from deterministic evidence.
-
-- **Prefixes:** clusters, names, choice types and the song's real next bar.
-- **Naming patterns:** named clusters grouped by choice type across prefixes.
-- **Pooled types:** one clustering of 3,192 samples from 50 prefixes, with its replication limits.
-
-Each clip plays the last prefix bar, then the continuation.
+rules features. Each cluster has a name and description from Qwen3-32B, written from facts computed for that prefix's
+clusters, plus chips from fixed rules (copies a prefix bar, opening-chord relation, density / register / rhythm vs the
+last prefix bar). Each clip plays the last prefix bar, then the continuation.

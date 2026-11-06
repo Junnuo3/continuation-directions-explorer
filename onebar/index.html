@@ -48,11 +48,6 @@ footer{max-width:1200px;margin:0 auto;padding:0 16px 30px;color:var(--muted);fon
   <h1>One-bar continuations: clusters and names</h1>
   <div class="sub" id="sub"></div>
 </header>
-<nav id="tabs">
-  <button data-t="prefixes" class="on">Prefixes</button>
-  <button data-t="patterns">Naming patterns</button>
-  <button data-t="types">Pooled types</button>
-</nav>
 <main id="main"></main>
 <footer id="foot"></footer>
 <audio id="au" preload="none"></audio>
@@ -77,22 +72,21 @@ const pb = (src, label, title) => `<button class="play" data-src="${src}" title=
 $("sub").innerHTML = `${D.prefixes.length} POP909 prefixes; 512 generated one-bar continuations each (1024 for pop909-839). `
   + `Generator: ${esc(D.model)}. Clusters: rules features within each prefix. Names: ${esc(D.namer)} from deterministic evidence. `
   + `Each ▶ plays the last prefix bar, then the continuation. <a href="../index.html">16-beat explorer</a>`;
-$("foot").innerHTML = `Shares are proportions of samples under top-p 0.98 sampling. Chord labels are rule-based estimates (Roman numerals in the prefix's estimated key). `
-  + `Choice types: copies a prefix bar = at least half the cluster shares ≥ 50% exact notes with one prefix bar; chord relation = the cluster's most common opening chord vs the prefix. `
-  + `Names were not checked by listening; review flags mark wording the automatic checks found questionable. Built ${esc(D.created_at.slice(0, 10))}.`;
+$("foot").innerHTML = `Names and descriptions: written by ${esc(D.namer)} from facts computed for each prefix's clusters (shared properties, differences between clusters, `
+  + `changes vs the last prefix bar, one example); “evidence cited” lists the facts it used. Not checked by listening; review flags mark wording the automatic checks found questionable. `
+  + `Chips: fixed rules on all members of a cluster. “copies bar k” = at least half the members share ≥ 50% of exact notes with prefix bar k; `
+  + `chord = most common rule-estimated chord in beats 1–2 (Roman numeral in the prefix's estimated key), and whether it holds the prefix's last chord, returns to another prefix chord or is new; `
+  + `density, register and rhythm compare the cluster's medians with the last prefix bar. Shares are proportions of samples under top-p 0.98 sampling. Built ${esc(D.created_at.slice(0, 10))}.`;
 
 // ------------------------------------------------------------ prefixes
 let curPid = D.prefixes[0].prefix_id;
 function prefixesView() {
   const p = D.prefixes.find(x => x.prefix_id === curPid);
   const opts = D.prefixes.map(x => `<option value="${x.prefix_id}" ${x.prefix_id === curPid ? "selected" : ""}>${esc(x.title)} · ${esc(x.key || "")} · ${x.tempo} bpm (${x.prefix_id})</option>`).join("");
-  const r = p.real;
   let h = `<div class="row"><select id="psel">${opts}</select>${pb(p.prefix_clip, "whole prefix")}</div>`
     + `<div class="row small muted">${p.n} samples · ${p.groups.length} rules clusters (effective choices ${p.eff.toFixed(1)}) · largest ${pct(p.dominant)} · rare ${pct(p.rare)} · CLaMP3 ${p.k.clamp3} · AMT ${p.k.amt} clusters</div>`
     + (p.summary ? `<div class="row small">${esc(p.summary)}</div>` : "")
     + (p.names_valid === false ? `<div class="warn">LLM output failed the format check (${esc((p.names_errors || []).join("; "))}); names shown as returned.</div>` : "")
-    + `<div class="card" style="margin-top:8px"><div class="row" style="margin:0">${pb(r.clip, "real next bar", r.events)}`
-    + `<span class="small">${esc(r.reuse)} · ${esc(r.relation)}${r.chord ? " (" + esc(r.chord) + ")" : ""} · closest cluster ${esc(r.nearest_group || "–")}</span></div></div>`
     + `<div class="grid">`;
   p.groups.forEach((g, i) => {
     h += `<div class="card"><h3><span>${esc(g.name || g.group)}</span><span class="share">${g.group} · ${pct(g.share)}</span></h3>`
@@ -100,7 +94,7 @@ function prefixesView() {
       + (g.description ? `<div>${esc(g.description)}</div>` : "")
       + `<div class="chips"><span class="chip">${esc(g.reuse)}</span><span class="chip">${esc(g.harmony)} · ${esc(g.relation)}</span>`
       + `<span class="chip">${esc(g.density)}</span><span class="chip">${esc(g.register)}</span><span class="chip">${esc(g.rhythm)}</span>`
-      + (g.move_type ? `<span class="chip" title="pooled type, ${pct(g.move_type_purity)} of members">${esc(g.move_type)}</span>` : "") + `</div>`
+      + `</div>`
       + (g.flags.length ? `<div class="warn">review flag: ${g.flags.map(esc).join(" · ")}</div>` : "")
       + `<div class="row">${g.clips.map((c, j) => pb(c, j ? String(j) : "representative")).join("")}</div>`
       + (g.evidence.length ? `<details><summary>evidence cited (${g.evidence.length})</summary><ul>${g.evidence.map(e => `<li>${esc(e)}</li>`).join("")}</ul></details>` : "")
@@ -109,51 +103,10 @@ function prefixesView() {
   return h + `</div>`;
 }
 
-// ------------------------------------------------------------ naming patterns
-function patternsView() {
-  let h = `<p class="small muted">Named clusters from all ${D.prefixes.length} prefixes, grouped by their deterministic choice type. `
-    + `“Chord named”: the name or description mentions the cluster's estimated opening chord. “Re-use named”: it mentions repetition or a prefix bar.</p>`;
-  D.patterns.forEach(c => {
-    h += `<div class="pat card"><h3>${esc(c.reuse)} · ${esc(c.relation)}</h3>`
-      + `<div class="small muted">${c.n_clusters} cluster${c.n_clusters > 1 ? "s" : ""} in ${c.n_prefixes} prefix${c.n_prefixes > 1 ? "es" : ""} · chord named ${c.chord_named[0]}/${c.chord_named[1]} · re-use named ${c.reuse_named[0]}/${c.reuse_named[1]} · frequent name words: `
-      + c.top_words.map(([w, n]) => `${esc(w)} (${n})`).join(", ") + `</div>`
-      + `<details><summary>${c.items.length} name${c.items.length > 1 ? "s" : ""}</summary><div class="scroll"><table><tr><th></th><th>prefix</th><th>share</th><th>chord</th><th>name</th><th>description</th></tr>`
-      + c.items.map(x => `<tr><td>${pb(x.clip, "")}</td><td>${esc(x.prefix_id.replace("pop909-", ""))} ${esc(x.group)}</td><td>${pct(x.share)}</td><td>${esc(x.harmony)}</td>`
-        + `<td>${esc(x.name || "–")}</td><td class="small muted">${esc(x.description || "")}</td></tr>`).join("")
-      + `</table></div></details></div>`;
-  });
-  return h;
-}
-
-// ------------------------------------------------------------ pooled types
-function typesView() {
-  const s = D.pooled, rs = D.real_summary;
-  let h = `<p class="small muted">One clustering of ${s.n_samples} samples pooled from ${s.n_prefixes} prefixes (64 each), using the same prefix-relative rules features. `
-    + `The types follow the opening chord's function in the estimated key. Split-half stability rises with k up to the largest k tested (k = ${s.k}, prediction ARI ${(s.stability[s.k] || 0).toFixed(2)}); `
-    + `type frequencies do not replicate across halves of the prefixes (r = ${(s.half_share_r || 0).toFixed(2)}); a last-chord reference frame gives a different partition (ARI ${s.variant_ari.toFixed(2)}). `
-    + `Real next bars: its type occurs in the prefix's samples for ${rs.present}/${rs.n}, and is the prefix's most common type for ${rs.dominant}/${rs.n}.</p>`
-    + `<div class="grid">`;
-  D.types.forEach(t => {
-    h += `<div class="card"><h3><span>${esc(t.name || t.type)}</span><span class="share">${t.type} · ${pct(t.share)} · ${t.n_prefixes_present} prefixes</span></h3>`
-      + `<div class="bar" style="width:${Math.max(4, 300 * t.share)}%"></div>`
-      + (t.description ? `<div>${esc(t.description)}</div>` : "")
-      + `<div class="chips">${t.chord.map(([c, v]) => `<span class="chip">${esc(c)} ${pct(v)}</span>`).join("")}`
-      + t.relation.map(([c, v]) => `<span class="chip">${esc(c)} ${pct(v)}</span>`).join("") + `<span class="chip">copies a bar ${pct(t.copies)}</span></div>`
-      + (t.flags.length ? `<div class="warn">review flag: ${t.flags.map(esc).join(" · ")}</div>` : "")
-      + `<div class="row">${t.clips.map(c => pb(c.clip, c.prefix_id.replace("pop909-", "").replace(/-win.*/, ""), c.prefix_id)).join("")}</div>`
-      + (t.evidence.length ? `<details><summary>evidence cited (${t.evidence.length})</summary><ul>${t.evidence.map(e => `<li>${esc(e)}</li>`).join("")}</ul></details>` : "")
-      + `</div>`;
-  });
-  return h + `</div>`;
-}
-
-let tab = "prefixes";
 function render() {
-  $("main").innerHTML = tab === "prefixes" ? prefixesView() : tab === "patterns" ? patternsView() : typesView();
-  document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.t === tab));
-  const s = $("psel"); if (s) s.onchange = () => { curPid = s.value; render(); };
+  $("main").innerHTML = prefixesView();
+  const s = $("psel"); if (s) s.onchange = () => { curPid = s.value; if (playing) { au.pause(); playing = null; } render(); };
 }
-$("tabs").onclick = e => { const t = e.target.dataset.t; if (t) { tab = t; if (playing) { au.pause(); playing = null; } render(); } };
 render();
 </script>
 </body>
