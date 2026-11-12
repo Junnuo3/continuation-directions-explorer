@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Continuation Decisions</title>
+<style>
+:root{--bg:#fbfaf7;--panel:#fff;--ink:#1d1d1f;--muted:#6b6b70;--line:#e3e1db;--accent:#2f5d8a;--chip:#f1efe9;--rare:#c4c4c8;--warn:#a5621b;--ok:#2d7a4b;--bad:#a83a3a;
+  --c0:#3b6fb6;--c1:#d07a2d;--c2:#3f9a5a;--c3:#b8457e;--c4:#7a5bb5;--c5:#8a7a3a}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161618;--panel:#1f1f22;--ink:#ececee;--muted:#a0a0a8;--line:#34343a;--accent:#8fb8e3;--chip:#2a2a2f;--rare:#55555c;--warn:#e0a35a;--ok:#6fc28f;--bad:#e07a7a;
+  --c0:#79a6e6;--c1:#eba363;--c2:#73c48d;--c3:#e07fb0;--c4:#ab92e6;--c5:#c9b86a}}
+:root[data-theme="dark"]{--bg:#161618;--panel:#1f1f22;--ink:#ececee;--muted:#a0a0a8;--line:#34343a;--accent:#8fb8e3;--chip:#2a2a2f;--rare:#55555c;--warn:#e0a35a;--ok:#6fc28f;--bad:#e07a7a;
+  --c0:#79a6e6;--c1:#eba363;--c2:#73c48d;--c3:#e07fb0;--c4:#ab92e6;--c5:#c9b86a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:1280px;margin:0 auto;padding:0 16px}
+header{padding:16px 0 4px}
+h1{font-size:19px;margin:0 0 4px}
+h2{font-size:15px;margin:2px 0 8px}
+h3{font-size:13px;margin:10px 0 4px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+.sub{color:var(--muted);font-size:13px;max-width:920px}
+.sub a{color:var(--accent)}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+select{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:5px 8px;font:inherit;max-width:100%}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;flex-wrap:wrap}
+.seg button{border:0;background:var(--panel);color:var(--ink);padding:5px 11px;font:inherit;cursor:pointer}
+.seg button.on{background:var(--accent);color:var(--bg)}
+button.b{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:6px;padding:4px 10px;font:inherit;font-size:13px;cursor:pointer}
+button.b:disabled{opacity:.45;cursor:default}
+button.go{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.lbl{font-size:12.5px;color:var(--muted)}
+.layout{display:grid;grid-template-columns:minmax(300px,470px) 1fr;gap:16px;padding:12px 0 30px}
+@media (max-width:900px){.layout{grid-template-columns:1fr}}
+.side{position:sticky;top:8px;align-self:start;display:flex;flex-direction:column;gap:10px}
+@media (max-width:900px){.side{position:static}}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:8px 10px}
+svg{width:100%;height:auto;display:block}
+.cap{font-size:12px;color:var(--muted);margin-top:4px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:9px 11px;margin-bottom:8px}
+.card.hi{border-color:var(--accent)}
+.ch{display:flex;align-items:flex-start;gap:8px}
+.sw{width:12px;height:12px;border-radius:3px;flex:none;margin-top:4px}
+.name{font-weight:600}
+.size{margin-left:auto;color:var(--muted);font-size:12.5px;white-space:nowrap}
+.desc{font-size:13px;margin:3px 0 0 20px}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0 0 20px}
+.chip{background:var(--chip);border-radius:5px;padding:1px 7px;font-size:12px}
+.chip.ok{color:var(--ok)}.chip.bad{color:var(--bad)}
+.flag{color:var(--warn);font-size:12px;margin:4px 0 0 20px}
+.bar{height:5px;background:var(--chip);border-radius:3px;margin:6px 0 0 20px;overflow:hidden}
+.bar>div{height:100%;background:var(--accent)}
+.note{color:var(--muted);font-size:12.5px}
+.merged{border-style:dashed}
+.sublist{margin:6px 0 0 20px;display:flex;flex-direction:column;gap:5px}
+.subopt{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:13px}
+.log{font-size:13px}
+.log li{margin:2px 0}
+canvas{width:100%;display:block;border-radius:6px}
+.plan td{padding:2px 6px;font-size:12.5px;vertical-align:top}
+.plan th{font-size:12px;color:var(--muted);text-align:left;padding:2px 6px}
+.status{font-size:13px;margin:4px 0 8px}
+.tag{font-size:11.5px;color:var(--muted)}
+details summary{cursor:pointer;color:var(--muted);font-size:12.5px}
+a{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Choosing a continuation, step by step</h1>
+  <div class="sub" id="sub"></div>
+</header>
+<div class="controls">
+  <select id="psel" aria-label="prefix"></select>
+  <span class="seg" id="mode"><button data-v="seq">Sequential (bar by bar)</button><button data-v="c2f">Coarse-to-fine (direction first)</button></span>
+  <span class="lbl">Describe options by</span>
+  <span class="seg" id="lens"><button data-v="full">Full</button><button data-v="rhythm">Rhythm &amp; texture</button><button data-v="harmony">Harmony</button><button data-v="plain">Plain words</button></span>
+  <button class="b" id="pstart">▶ from the start</button>
+  <button class="b" id="plast">▶ last 2 bars</button>
+  <button class="b" id="stop">■ stop</button>
+</div>
+<div class="layout">
+  <div class="side">
+    <div class="box"><h3 id="treeTitle">Choice tree</h3><svg id="tree" viewBox="0 0 440 250"></svg>
+      <div class="cap" id="treeCap"></div>
+      <div id="pickRow" class="row" style="margin-left:0"></div></div>
+    <div class="box"><h3>Candidate pool (2-D map)</h3><svg id="map" viewBox="0 0 440 300"></svg><div class="cap" id="mapCap"></div></div>
+  </div>
+  <div>
+    <div class="box" style="margin-bottom:10px"><h3>The music so far</h3><canvas id="roll" height="170"></canvas><div class="cap" id="rollCap"></div></div>
+    <div id="panel"></div>
+    <div class="box"><h3>Decision log</h3><ol class="log" id="log"></ol></div>
+  </div>
+</div>
+</div>
+<script src="data/index.js"></script>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const col = k => k < 0 ? css("--rare") : css("--c" + (k % 6));
+const pct = x => Math.round(100 * x) + "%";
+const I = window.DEC_INDEX;
+const FAM = {rhythm: "rhythm", harmony: "harmony", texture: "texture", closure: "ending"};
+const LENS_FAMS = {full: [], plain: [], rhythm: ["rhythm", "texture"], harmony: ["harmony", "closure"]};
+let P = null, S = {mode: "seq", lens: "full", node: null, dir: null, mech: "regen", narrow: [], hover: null, pick: ""};
+
+$("sub").innerHTML = `Every option here was generated in advance: an AMT model (music-medium-800k, top-p 0.98) sampled 256–1024 continuations
+  at each step, the rules representation grouped them, and Qwen3-32B wrote the names from measured evidence (the grey chip under each name is the
+  deterministic choice type). Choosing a group commits its most representative sample (the one you hear with ▶), and the next step's
+  candidates were sampled from the music including that bar. Only the most common groups were expanded; others are marked <i>not generated</i>.
+  Listening judgements are pending: groups are clusters, not validated perceptual categories.
+  <a href="../index.html">16-beat explorer</a> · <a href="../onebar/index.html">one-bar explorer</a>`;
+$("psel").innerHTML = I.prefixes.map((p, i) => `<option value="${i}">${esc(p.title)} · ${esc(p.key)} · ${p.tempo} bpm (${p.id})</option>`).join("");
+
+// ------------------------------------------------------------------ audio
+const player = {
+  ctx: null, cache: new Map(), live: [],
+  buf(url) {
+    if (!this.cache.has(url)) this.cache.set(url, fetch(url).then(r => { if (!r.ok) throw new Error(url); return r.arrayBuffer(); }).then(b => this.ctx.decodeAudioData(b)));
+    return this.cache.get(url);
+  },
+  stop() { this.live.forEach(s => { try { s.stop(); } catch (e) {} }); this.live = []; },
+  async play(segs, from = 0) {  // segs: [{url, at}] with `at` = time in the piece (s); playback starts at piece time `from`
+    this.stop();
+    if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    await this.ctx.resume();
+    const bufs = await Promise.all(segs.map(s => this.buf(s.url)));
+    const t0 = this.ctx.currentTime + 0.06;
+    bufs.forEach((b, i) => {
+      let when = segs[i].at - from, off = 0;
+      if (when < 0) { off = -when; when = 0; }
+      if (off >= b.duration) return;
+      const s = this.ctx.createBufferSource(); s.buffer = b; s.connect(this.ctx.destination); s.start(t0 + when, off); this.live.push(s);
+    });
+    window.__decPlay = {segs, from};
+  }
+};
+const sample = k => P.samples[k];
+const segOf = k => ({url: sample(k).clip, at: sample(k).start});
+function commits() {  // committed sample keys along the current path
+  if (S.mode === "seq") return chain(P.seq.nodes, S.node).map(n => P.seq.nodes[n].commit).filter(Boolean);
+  if (S.dir === null) return [];
+  const d = P.c2f.directions[S.dir];
+  if (S.mech === "regen") return chain(d.regen.nodes, S.node).map(n => d.regen.nodes[n].commit).filter(Boolean);
+  const leaf = S.narrow.length === 2 ? d.narrow.level2[S.narrow[0]].children[S.narrow[1]] : null;
+  return leaf && S.narrowDone ? [leaf.medoid] : [];
+}
+function pieceEnd(extra) {
+  let e = P.cut;
+  [...commits(), ...(extra ? [extra] : [])].forEach(k => { const s = sample(k); e = Math.max(e, s.start + s.bars * P.bar_s); });
+  return e;
+}
+function playPiece(extra, last2) {
+  const segs = [{url: P.prefix_clip, at: 0}, ...commits().map(segOf), ...(extra ? [segOf(extra)] : [])];
+  const end = pieceEnd(extra);
+  player.play(segs, last2 ? Math.max(0, end - (extra ? (sample(extra).bars + 1) : 2) * P.bar_s) : 0);
+}
+const playInContext = k => playPiece(k, true);
+$("pstart").onclick = () => playPiece(null, false);
+$("plast").onclick = () => playPiece(null, true);
+$("stop").onclick = () => player.stop();
+
+// ------------------------------------------------------------------ helpers
+function chain(nodes, id) { const out = []; while (id) { out.unshift(id); id = nodes[id].parent; } return out; }
+function lensText(o) {
+  const v = S.lens === "full" ? null : (o.views || {})[S.lens];
+  if (S.lens === "full" || !v) return {title: o.name || o.type, desc: S.lens === "full" ? (o.desc || "") : "", fallback: S.lens !== "full" && !v};
+  return {title: v, desc: ""};
+}
+function collapsedGroups(groups, sep) {  // union-find of groups whose separation the lens hides
+  const fams = LENS_FAMS[S.lens];
+  const parent = {}; groups.forEach(g => parent[g.g] = g.g);
+  const f = x => parent[x] === x ? x : (parent[x] = f(parent[x]));
+  if (fams.length) for (const [k, v] of Object.entries(sep || {})) {
+    const [a, b] = k.split("|");
+    if (parent[a] && parent[b] && v.collapses.includes(S.lens)) parent[f(a)] = f(b);
+  }
+  const sets = {}; groups.forEach(g => (sets[f(g.g)] = sets[f(g.g)] || []).push(g));
+  return Object.values(sets);
+}
+function hiddenFamily(set, sep) {
+  const c = {}; for (let i = 0; i < set.length; i++) for (let j = i + 1; j < set.length; j++) {
+    const k = sep[`${set[i].g}|${set[j].g}`] || sep[`${set[j].g}|${set[i].g}`]; if (k) c[k.top] = (c[k.top] || 0) + 1; }
+  return Object.entries(c).sort((a, b) => b[1] - a[1]).map(x => FAM[x[0]] || x[0])[0] || "other features";
+}
+function gIndex(g) { return parseInt(String(g).replace(/\D/g, ""), 10) - 1; }
+
+// ------------------------------------------------------------------ piano roll
+function drawRoll() {
+  const cv = $("roll"), w = cv.clientWidth || 700, h = 170, dpr = window.devicePixelRatio || 1;
+  cv.width = w * dpr; cv.height = h * dpr; const g = cv.getContext("2d"); g.scale(dpr, dpr); g.clearRect(0, 0, w, h);
+  const cm = commits(), prev = S.hover;
+  const end = Math.max(P.cut + 4 * P.bar_s, pieceEnd(prev)) + 0.3;
+  const notes = P.prefix_notes.map(n => ({t: n[0], d: n[1], p: n[2], c: css("--rare")}));
+  cm.forEach((k, i) => sample(k).notes.forEach(n => notes.push({t: sample(k).start + n[0], d: n[1], p: n[2], c: col(i)})));
+  const pv = prev ? sample(prev).notes.map(n => ({t: sample(prev).start + n[0], d: n[1], p: n[2]})) : [];
+  const ps = [...notes, ...pv].map(n => n.p), lo = Math.min(...ps) - 2, hi = Math.max(...ps) + 2;
+  const X = t => 4 + (w - 8) * t / end, Y = p => h - 6 - (h - 12) * (p - lo) / Math.max(hi - lo, 1);
+  g.strokeStyle = css("--line"); g.lineWidth = 1;
+  for (let b = 0; P.cut - b * P.bar_s >= -1e-6; b++) { const x = X(P.cut - b * P.bar_s); g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); }
+  for (let b = 1; P.cut + b * P.bar_s < end; b++) { const x = X(P.cut + b * P.bar_s); g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); }
+  g.strokeStyle = css("--ink"); g.lineWidth = 1.5; g.beginPath(); g.moveTo(X(P.cut), 0); g.lineTo(X(P.cut), h); g.stroke();
+  const nh = Math.max(2, (h - 12) / Math.max(hi - lo, 1));
+  notes.forEach(n => { g.fillStyle = n.c; g.fillRect(X(n.t), Y(n.p) - nh / 2, Math.max(2, X(n.t + n.d) - X(n.t)), nh); });
+  g.setLineDash([3, 2]); g.strokeStyle = css("--accent"); g.lineWidth = 1.2;
+  pv.forEach(n => g.strokeRect(X(n.t), Y(n.p) - nh / 2, Math.max(2, X(n.t + n.d) - X(n.t)), nh)); g.setLineDash([]);
+  $("rollCap").textContent = `Grey: the 4-bar opening (prefix); coloured: bars chosen so far (one colour per step)` + (prev ? "; dashed: the option under the cursor." : ".");
+}
+
+// ------------------------------------------------------------------ pool map
+function drawMap(sc, opts) {
+  const svg = $("map"), W = 440, H = 300;
+  if (!sc) { svg.innerHTML = ""; $("mapCap").textContent = "No pool at this step."; return; }
+  const xs = sc.x, ys = sc.y, mx = Math.min(...xs), Mx = Math.max(...xs), my = Math.min(...ys), My = Math.max(...ys);
+  const X = x => 12 + (W - 24) * (x - mx) / Math.max(Mx - mx, 1e-9), Y = y => H - 12 - (H - 24) * (y - my) / Math.max(My - my, 1e-9);
+  let s = "";
+  xs.forEach((x, i) => {
+    const g = sc.g[i], rej = sc.acc && !sc.acc[i];
+    const hl = opts.hl != null && g === opts.hl;
+    s += `<circle cx="${X(x).toFixed(1)}" cy="${Y(ys[i]).toFixed(1)}" r="${hl ? 3.6 : 2.6}" fill="${rej ? css("--rare") : col(g)}" opacity="${rej ? .35 : (opts.hl != null && !hl ? .35 : .85)}"/>`;
+  });
+  (opts.stars || []).forEach(st => { const i = sc.id.indexOf(st.id); if (i >= 0) s += `<circle cx="${X(xs[i]).toFixed(1)}" cy="${Y(ys[i]).toFixed(1)}" r="6.5" fill="none" stroke="${css("--ink")}" stroke-width="1.8"/>`; });
+  svg.innerHTML = s;
+  $("mapCap").textContent = opts.cap;
+}
+
+// ------------------------------------------------------------------ tree map
+function drawTree(nodes, root, cur, title, cap, pickPath) {
+  $("treeTitle").textContent = title;
+  const depth = id => chain(nodes, id).length - 1;
+  const leaves = [], pos = {};
+  (function walk(id) { const ch = Object.values(nodes[id].children || {}); if (!ch.length) leaves.push(id); ch.forEach(walk); })(root);
+  const maxD = Math.max(...Object.keys(nodes).map(depth), 1), W = 440, H = 250;
+  leaves.forEach((id, i) => pos[id] = {y: 10 + (H - 20) * (leaves.length > 1 ? i / (leaves.length - 1) : .5)});
+  (function place(id) { const ch = Object.values(nodes[id].children || {}); ch.forEach(place);
+    if (ch.length) pos[id] = {y: ch.reduce((a, c) => a + pos[c].y, 0) / ch.length}; pos[id].x = 14 + (W - 40) * depth(id) / maxD; })(root);
+  const path = new Set(chain(nodes, cur)), picks = new Set(pickPath || []);
+  let s = "";
+  for (const [id, n] of Object.entries(nodes)) for (const [lab, c] of Object.entries(n.children || {})) {
+    if (!pos[c]) continue; const on = path.has(c), pk = picks.has(c) && picks.has(id);
+    s += `<line x1="${pos[id].x}" y1="${pos[id].y}" x2="${pos[c].x}" y2="${pos[c].y}" stroke="${on ? css("--accent") : pk ? css("--c1") : css("--line")}" stroke-width="${on || pk ? 2.2 : 1}"/>`;
+  }
+  for (const [id, n] of Object.entries(nodes)) { if (!pos[id]) continue;
+    const ng = (n.groups || n.options || []).filter(g => !g.expanded).length;
+    if (ng) s += `<line x1="${pos[id].x}" y1="${pos[id].y}" x2="${pos[id].x + 9}" y2="${pos[id].y + 5}" stroke="${css("--rare")}" stroke-dasharray="2 2"/>`;
+    const on = path.has(id);
+    s += `<circle data-n="${id}" cx="${pos[id].x}" cy="${pos[id].y}" r="${id === cur ? 6 : on ? 4.5 : 3}" fill="${on ? css("--accent") : picks.has(id) ? css("--c1") : css("--panel")}" stroke="${on ? css("--accent") : css("--muted")}" style="cursor:pointer"><title>${esc(n.via ? "via " + n.via : "start")}</title></circle>`;
+  }
+  $("tree").innerHTML = s;
+  $("tree").querySelectorAll("circle").forEach(c => c.onclick = () => { S.node = c.dataset.n; S.hover = null; render(); });
+  $("treeCap").innerHTML = cap;
+}
+
+// ------------------------------------------------------------------ option cards
+function optionCard(o, k, sep, choose, extraRows) {
+  const t = lensText(o);
+  // naming checks are heuristic; show only those about the text in the current view (lens views are checked separately)
+  const rel = (o.flags || []).filter(f => S.lens === "rhythm" ? f.startsWith("rhythm_view") : S.lens === "harmony" ? f.startsWith("harmony_view")
+    : S.lens === "plain" ? f.startsWith("plain view") : !/^(rhythm_view|harmony_view|plain view)/.test(f));
+  const flags = rel.length ? `<div class="flag" title="${esc(rel.join("; "))}">⚠ ${rel.length} naming check${rel.length > 1 ? "s" : ""} flagged for this view (hover)</div>` : "";
+  return `<div class="card" data-k="${k}" data-med="${o.medoid}">
+    <div class="ch"><span class="sw" style="background:${col(k)}"></span><div><span class="name">${esc(t.title)}</span>${t.fallback ? ' <span class="tag">(no lens text: choice type shown)</span>' : ""}</div>
+      <span class="size">${pct(o.share)} · ${o.size ?? o.n} samples</span></div>
+    ${t.desc ? `<div class="desc">${esc(t.desc)}</div>` : ""}
+    <div class="row">${t.title === o.type ? "" : `<span class="chip">${esc(o.type || "")}</span>`}${extraRows || ""}</div>
+    <div class="bar"><div style="width:${pct(o.share)}"></div></div>
+    <div class="row"><button class="b" data-play="${o.medoid}">▶ hear in context</button>
+      ${(o.varied || []).map((v, i) => `<button class="b" data-play="${v}">▶ example ${i + 2}</button>`).join("")}
+      ${choose}</div>${flags}</div>`;
+}
+function wire(panel) {
+  panel.querySelectorAll("[data-play]").forEach(b => b.onclick = () => playInContext(b.dataset.play));
+  panel.querySelectorAll(".card,.subopt").forEach(c => {
+    c.onmouseenter = () => { if (c.dataset.med) { S.hover = c.dataset.med; S.hl = +c.dataset.k; drawRoll(); redrawMap(); } };
+    c.onmouseleave = () => { S.hover = null; S.hl = null; drawRoll(); redrawMap(); };
+  });
+}
+let redrawMap = () => {};
+
+// ------------------------------------------------------------------ sequential
+function renderSeq() {
+  const nodes = P.seq.nodes, n = nodes[S.node], d = n.depth;
+  const pk = S.pick ? (S.pick.startsWith("llm:") ? (P.seq.llm[S.pick.slice(4)] || {}).path : P.seq.oracle[S.pick.slice(7)]) : null;
+  drawTree(nodes, P.seq.root, S.node, "Choice tree (sequential)", `Columns = bars 1–4. Each node is the music after the choices on its path; a dashed stub means some groups were not generated. Click a node to go back.`, pk);
+  let h = "";
+  if (n.groups) {
+    h += `<div class="box" style="margin-bottom:10px"><h2>Bar ${d + 1} of 4: how should it continue?</h2>
+      <div class="note">${n.n_valid} candidates · ${n.groups.length} groups + ${n.rare} rare · ${n.eff.toFixed(1)} effective choices</div></div>`;
+    const sets = collapsedGroups(n.groups, n.sep);
+    for (const set of sets) {
+      if (set.length === 1) {
+        const g = set[0], k = gIndex(g.g);
+        const choose = g.expanded ? `<button class="b go" data-choose="${g.g}">Choose</button>` : `<button class="b" disabled title="Only the most common groups were expanded">not generated</button>`;
+        h += optionCard(g, k, n.sep, choose);
+      } else {
+        h += `<div class="card merged"><div class="name">${set.length} options that differ mainly in ${hiddenFamily(set, n.sep)}, which this view hides</div>
+          <div class="note" style="margin-left:0">Listen to tell them apart, or switch the view to Full.</div><div class="sublist">` +
+          set.map(g => `<div class="subopt" data-k="${gIndex(g.g)}" data-med="${g.medoid}"><span class="sw" style="background:${col(gIndex(g.g))}"></span>${esc(lensText(g).title)} <span class="tag">${pct(g.share)} · ${esc(g.type)}</span>
+            <button class="b" data-play="${g.medoid}">▶</button>${g.expanded ? `<button class="b go" data-choose="${g.g}">Choose</button>` : '<span class="tag">not generated</span>'}</div>`).join("") + `</div></div>`;
+      }
+    }
+  } else {
+    h += `<div class="box" style="margin-bottom:10px"><h2>Phrase complete (4 new bars)</h2><div class="note">Beyond four bars nothing was precomputed for this page. ▶ from the start plays the whole result.</div></div>`;
+  }
+  $("panel").innerHTML = h;
+  $("panel").querySelectorAll("[data-choose]").forEach(b => b.onclick = () => { S.node = n.children[b.dataset.choose]; S.hover = null; render(); });
+  wire($("panel"));
+  redrawMap = () => drawMap(n.scatter, {hl: S.hl, stars: (n.groups || []).map(g => ({id: g.medoid.split(":")[1]})),
+    cap: n.scatter ? "Each dot is one sampled continuation of the next bar, coloured by group (grey = rare); ringed = the sample a choice commits." : ""});
+  redrawMap();
+  const ch = chain(nodes, S.node).slice(1);
+  $("log").innerHTML = ch.map((id, i) => { const par = nodes[nodes[id].parent], g = par.groups.find(x => x.g === nodes[id].via);
+    return `<li><span class="sw" style="display:inline-block;background:${col(i)}"></span> bar ${i + 1}: <b>${esc(lensText(g).title)}</b> <span class="tag">${esc(g.type)} · ${pct(g.share)} of its pool</span></li>`; }).join("") || "<li class='note' style='list-style:none'>No choice yet.</li>";
+  let pr = `<span class="lbl">Show the path picked by</span> <select id="pick"><option value="">nobody</option>` +
+    Object.keys(I.intents).map(k => `<option value="oracle:${k}">rule oracle: ${esc(I.intents[k])}</option>`).join("") +
+    Object.keys(P.seq.llm || {}).map(k => `<option value="llm:${k}">Qwen3-32B: ${esc(I.intents[k])}</option>`).join("") + `</select>`;
+  $("pickRow").innerHTML = pr; $("pick").value = S.pick; $("pick").onchange = e => { S.pick = e.target.value; render(); };
+}
+
+// ------------------------------------------------------------------ coarse-to-fine
+function planTable(d, committedFacts) {
+  let h = `<table class="plan"><tr><th>bar</th><th>the direction's plan (shared by most of its 4-bar samples, rare elsewhere)</th><th>chosen bar</th></tr>`;
+  d.plan.forEach((preds, b) => {
+    const f = committedFacts[b];
+    const cells = preds.length ? preds.map(p => { const ok = f ? f[p.key] === p.value : null;
+      return `<span class="chip ${ok === true ? "ok" : ok === false ? "bad" : ""}">${esc(p.key.replace("_", " "))}: ${esc(String(p.value))} <span class="tag">${pct(p.share)} vs ${pct(p.pool_share)}</span>${ok === true ? " ✓" : ok === false ? " ✗" : ""}</span>`; }).join(" ")
+      : `<span class="tag">no constraint</span>`;
+    h += `<tr><td>${b + 1}</td><td>${cells}</td><td>${f ? esc(f.copy + " · " + f.chord_1 + " · " + f.density) : ""}</td></tr>`;
+  });
+  return h + "</table>";
+}
+function renderC2F() {
+  const C = P.c2f;
+  if (!C) { $("panel").innerHTML = `<div class="box">Coarse-to-fine data for this prefix is not available yet.</div>`; return; }
+  $("pickRow").innerHTML = "";
+  if (S.dir === null) {
+    drawTree({r: {children: Object.fromEntries(C.directions.map((d, i) => [d.d, "d" + i])), via: null}, ...Object.fromEntries(C.directions.map((d, i) => ["d" + i, {parent: "r", via: d.d, children: {}}]))},
+      "r", "r", "Directions", "Step 1 picks a direction for the whole 4-bar phrase; later steps refine it.");
+    let h = `<div class="box" style="margin-bottom:10px"><h2>Step 1: pick a direction for the next 4 bars</h2>
+      <div class="note">${C.n_valid} four-bar continuations, grouped by a bar-by-bar description of the phrase (does each bar reuse earlier material,
+      does its opening chord hold / return to a prefix chord / bring a new chord, does it get thinner or busier, does the phrase end on the tonic;
+      ${C.eff.toFixed(1)} effective choices). Each direction becomes a <b>plan</b>: the bar properties most of its samples share and other samples rarely have.</div></div>`;
+    C.directions.forEach((d, k) => {
+      const plan = d.plan.map((p, b) => p.length ? `bar ${b + 1}: ` + p.map(x => x.value === true ? "ends on the tonic" : x.value).join(", ") : "").filter(Boolean).join(" · ");
+      const o = {...d, type: "plan: " + (plan || "none (no property is distinctive enough: the typical continuation)")};
+      const extra = `</div><div class="row"><span class="tag">typical bars: ${esc(d.summary || "")}</span>`;
+      h += optionCard(o, k, C.sep, `<button class="b go" data-dir="${k}">Choose this direction</button>`, extra);
+    });
+    $("panel").innerHTML = h;
+    $("panel").querySelectorAll("[data-dir]").forEach(b => b.onclick = () => { S.dir = +b.dataset.dir; S.node = C.directions[S.dir].regen.root; S.narrow = []; S.narrowDone = false; render(); });
+    wire($("panel"));
+    redrawMap = () => drawMap(C.scatter, {hl: S.hl, stars: C.directions.map(d => ({id: d.medoid.split(":")[1]})), cap: "Each dot is one 4-bar continuation placed by its phrase description (many share a position), coloured by direction (grey = rare); ringed = representative."});
+    redrawMap();
+    $("log").innerHTML = "<li class='note' style='list-style:none'>No choice yet.</li>";
+    return;
+  }
+  const d = C.directions[S.dir];
+  let h = `<div class="box" style="margin-bottom:10px"><div class="ch"><span class="sw" style="background:${col(S.dir)}"></span><div><span class="name">Direction: ${esc(lensText(d).title)}</span>
+     <div class="note">${esc(d.desc || "")}</div></div><button class="b" id="back" style="margin-left:auto">change direction</button></div>
+     <div class="row" style="margin-left:0"><span class="lbl">Refine by</span><span class="seg" id="mech"><button data-v="regen">plan + regenerate (bar by bar)</button><button data-v="narrow">narrowing the 4-bar pool</button></span></div></div>`;
+  if (S.mech === "regen") {
+    const nodes = d.regen.nodes, n = nodes[S.node];
+    drawTree(nodes, d.regen.root, S.node, "Choice tree (plan + regenerate)", "Columns = bars 1–4. Each bar was generated fresh from the music so far and filtered by the plan.", null);
+    const cf = chain(nodes, S.node).slice(1).map(id => { const s = sample(nodes[id].commit); return s.facts[0]; });
+    h += `<div class="box" style="margin-bottom:10px">${planTable(d, cf)}</div>`;
+    if (n.options) {
+      h += `<div class="box" style="margin-bottom:10px"><h2>Bar ${n.bar + 1} of 4 under this plan</h2><div class="status">${n.preds.length ? `${n.n_accepted} of ${n.n_clustered} fresh candidates fit the plan for this bar (${pct(n.acceptance)})${n.extra ? "; a second, larger batch was drawn because the first had too few" : ""}.` : "The plan sets no constraint for this bar: all candidates are options."}
+        ${n.status === "plan not reachable here" ? `<br><b style="color:var(--warn)">The plan is not reachable here:</b> too few candidates fit, so the closest one is offered.` : ""}</div></div>`;
+      n.options.forEach((o, k) => {
+        const choose = o.expanded ? `<button class="b go" data-opt="${o.o}">Choose</button>` : `<button class="b" disabled>not generated</button>`;
+        h += optionCard({...o, size: o.n}, k, null, choose);
+      });
+    } else h += `<div class="box">Phrase complete under the plan. ▶ from the start plays the result.</div>`;
+    $("panel").innerHTML = h;
+    $("panel").querySelectorAll("[data-opt]").forEach(b => b.onclick = () => { S.node = n.children[b.dataset.opt]; render(); });
+    redrawMap = () => drawMap(n.scatter, {hl: S.hl, stars: (n.options || []).map(o => ({id: o.medoid.split(":")[1]})),
+      cap: n.scatter ? "Fresh one-bar candidates at this step: coloured = fits the plan (by option), grey = rejected by the plan." : ""});
+    $("log").innerHTML = `<li>direction: <b>${esc(lensText(d).title)}</b></li>` + chain(nodes, S.node).slice(1).map((id, i) => {
+      const par = nodes[nodes[id].parent], o = par.options.find(x => x.o === nodes[id].via);
+      return `<li><span class="sw" style="display:inline-block;background:${col(i)}"></span> bar ${i + 1}: <b>${esc(o.type)}</b> <span class="tag">${pct(o.share)} of the plan-fitting candidates</span></li>`; }).join("");
+  } else {
+    const nr = d.narrow;
+    drawTree({r: {children: Object.fromEntries(nr.level2.map((s, i) => [s.o, "a" + i])), via: null},
+      ...Object.fromEntries(nr.level2.flatMap((s, i) => [["a" + i, {parent: "r", via: s.o, children: Object.fromEntries(s.children.map((t, j) => [t.o, `a${i}_${j}`]))}],
+        ...s.children.map((t, j) => [`a${i}_${j}`, {parent: "a" + i, via: t.o, children: {}}])]))},
+      "r", S.narrow.length === 0 ? "r" : S.narrow.length === 1 ? "a" + S.narrow[0] : `a${S.narrow[0]}_${S.narrow[1]}`, "Refinement tree (pool narrowing)",
+      `Inside the direction's ${nr.n} saved 4-bar samples: first by bars 1–2, then by all 4 bars. Room: ${nr.room.level2_options} options, then ${nr.room.level3_options.join("/")}.`, null);
+    if (S.narrow.length === 0) {
+      h += `<div class="box" style="margin-bottom:10px"><h2>Refine bars 1–2</h2><div class="note">${nr.level2.length === 1 ? "The direction leaves no room here: its samples form one group in bars 1–2." : ""}</div></div>`;
+      nr.level2.forEach((s, k) => h += optionCard({type: s.types.join(" → "), share: s.n / nr.n, n: s.n, medoid: s.medoid, name: `Option ${s.o}`}, k, null, `<button class="b go" data-n2="${k}">Choose</button>`));
+    } else {
+      const s = nr.level2[S.narrow[0]];
+      if (S.narrow.length === 1) {
+        h += `<div class="box" style="margin-bottom:10px"><h2>Refine bars 3–4</h2><div class="note">${s.children.length === 1 ? "No further refinement: these samples form one group." : ""}</div></div>`;
+        s.children.forEach((t, k) => h += optionCard({type: t.types.join(" → "), share: t.n / s.n, n: t.n, medoid: t.medoid, name: `Option ${t.o}`}, k, null, `<button class="b go" data-n3="${k}">Choose</button>`));
+      } else {
+        const t = s.children[S.narrow[1]];
+        h += `<div class="box">Chosen: ${esc(t.types.join(" → "))}. Its representative 4-bar sample is committed. <button class="b" id="n2back">refine again</button></div>`;
+        S.narrowDone = true;
+      }
+    }
+    $("panel").innerHTML = h;
+    $("panel").querySelectorAll("[data-n2]").forEach(b => b.onclick = () => { S.narrow = [+b.dataset.n2]; render(); });
+    $("panel").querySelectorAll("[data-n3]").forEach(b => b.onclick = () => { S.narrow = [S.narrow[0], +b.dataset.n3]; render(); });
+    if ($("n2back")) $("n2back").onclick = () => { S.narrow = []; S.narrowDone = false; render(); };
+    redrawMap = () => drawMap(C.scatter, {hl: S.dir, stars: [], cap: "The saved 4-bar pool, coloured by direction; narrowing only selects inside the chosen direction."});
+    $("log").innerHTML = `<li>direction: <b>${esc(lensText(d).title)}</b></li>` + (S.narrow.length ? `<li>bars 1–2: ${esc(d.narrow.level2[S.narrow[0]].types.join(" → "))}</li>` : "") +
+      (S.narrow.length > 1 ? `<li>bars 1–4: ${esc(d.narrow.level2[S.narrow[0]].children[S.narrow[1]].types.join(" → "))}</li>` : "");
+  }
+  wire($("panel"));
+  redrawMap();
+  $("back").onclick = () => { S.dir = null; S.node = null; render(); };
+  $("mech").querySelectorAll("button").forEach(b => { b.classList.toggle("on", b.dataset.v === S.mech); b.onclick = () => { S.mech = b.dataset.v; S.node = d.regen.root; S.narrow = []; S.narrowDone = false; render(); }; });
+}
+
+function render() {
+  for (const id of ["mode", "lens"]) $(id).querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.v === S[id]));
+  if (S.mode === "seq") { if (!S.node) S.node = P.seq.root; renderSeq(); } else renderC2F();
+  drawRoll();
+}
+for (const id of ["mode", "lens"]) $(id).querySelectorAll("button").forEach(b => b.onclick = () => {
+  S[id] = b.dataset.v; if (id === "mode") { S.node = null; S.dir = null; S.narrow = []; S.narrowDone = false; } player.stop(); render(); });
+function loadPrefix(i) {
+  const id = I.prefixes[i].id;
+  const go = () => { P = window.DEC_DATA[id]; S.node = null; S.dir = null; S.narrow = []; S.narrowDone = false; S.mech = "regen"; S.hover = null; render(); };
+  if (window.DEC_DATA && window.DEC_DATA[id]) return go();
+  const s = document.createElement("script"); s.src = `data/${id}.js`; s.onload = go; document.body.appendChild(s);
+}
+$("psel").onchange = e => { player.stop(); loadPrefix(+e.target.value); };
+window.addEventListener("resize", () => P && drawRoll());
+loadPrefix(0);
+</script>
+</body>
+</html>
