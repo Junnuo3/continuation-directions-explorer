@@ -56,6 +56,8 @@ svg{width:100%;height:auto;display:block}
 .log{font-size:13px}
 .log li{margin:2px 0}
 canvas{width:100%;display:block;border-radius:6px}
+.rollwrap{position:relative}
+#playhead{position:absolute;top:0;bottom:0;left:0;width:2px;margin-left:-1px;background:var(--accent);pointer-events:none;display:none;box-shadow:0 0 6px var(--accent)}
 .plan td{padding:2px 6px;font-size:12.5px;vertical-align:top}
 .plan th{font-size:12px;color:var(--muted);text-align:left;padding:2px 6px}
 .status{font-size:13px;margin:4px 0 8px}
@@ -88,7 +90,7 @@ a{color:var(--accent)}
     <div class="box"><h3>Candidate pool (2-D map)</h3><svg id="map" viewBox="0 0 440 300"></svg><div class="cap" id="mapCap"></div></div>
   </div>
   <div>
-    <div class="box" style="margin-bottom:10px"><h3>The music so far</h3><canvas id="roll" height="170"></canvas><div class="cap" id="rollCap"></div></div>
+    <div class="box" style="margin-bottom:10px"><h3>The music so far</h3><div class="rollwrap"><canvas id="roll" height="170"></canvas><div id="playhead" aria-hidden="true"></div></div><div class="cap" id="rollCap"></div></div>
     <div id="panel"></div>
     <div class="box"><h3>Decision log</h3><ol class="log" id="log"></ol></div>
   </div>
@@ -105,6 +107,7 @@ const pct = x => Math.round(100 * x) + "%";
 const I = window.DEC_INDEX;
 const FAM = {rhythm: "rhythm", harmony: "harmony", texture: "texture", closure: "ending"};
 const LENS_FAMS = {full: [], plain: [], rhythm: ["rhythm", "texture"], harmony: ["harmony", "closure"]};
+let rollX = null;
 let P = null, S = {mode: "seq", lens: "full", node: null, dir: null, mech: "regen", narrow: [], hover: null, pick: ""};
 
 $("sub").innerHTML = `Every option here was generated in advance: an AMT model (music-medium-800k, top-p 0.98) sampled 256–1024 continuations
@@ -117,7 +120,8 @@ $("psel").innerHTML = I.prefixes.map((p, i) => `<option value="${i}">${esc(p.tit
 
 // ------------------------------------------------------------------ audio
 const player = {
-  ctx: null, cache: new Map(), live: [], els: [], timers: [], gen: 0,
+  ctx: null, cache: new Map(), live: [], els: [], timers: [], gen: 0, clock: null, endT: 0,
+  now() { const c = this.clock; if (!c) return null; return c.from + (c.kind === "wa" ? this.ctx.currentTime - c.t0 : (performance.now() - c.t0) / 1000); },
   status(msg, err) { const el = $("pstat"); if (el) { el.textContent = msg || ""; el.style.color = err ? "#b42318" : ""; } },
   buf(url) {
     if (!this.cache.has(url)) {
@@ -132,11 +136,15 @@ const player = {
     this.live.forEach(s => { try { s.stop(); } catch (e) {} }); this.live = [];
     this.timers.forEach(clearTimeout); this.timers = [];
     this.els.forEach(a => { try { a.pause(); } catch (e) {} }); this.els = [];
-    this.status("");
+    this.status(""); this.clock = null;
+    if (S.playExtra) { S.playExtra = null; if (P) drawRoll(); }
+    const ph = $("playhead"); if (ph) ph.style.display = "none";
   },
-  async play(segs, from = 0) {  // segs: [{url, at}] with `at` = time in the piece (s); playback starts at piece time `from`
+  async play(segs, from = 0, endT = Infinity, extra = null) {  // segs: [{url, at}] with `at` = time in the piece (s); playback starts at piece time `from`
     this.stop();
     const gen = this.gen;
+    this.endT = endT;
+    if (extra) { S.playExtra = extra; drawRoll(); }
     const plan = segs.map(s => { let when = s.at - from, off = 0; if (when < 0) { off = -when; when = 0; } return {url: s.url, when, off}; });
     this.status("loading…");
     try {
@@ -152,9 +160,11 @@ const player = {
         const s = this.ctx.createBufferSource(); s.buffer = b; s.connect(this.ctx.destination); s.start(t0 + when, off); this.live.push(s);
         end = Math.max(end, when + b.duration - off);
       });
+      this.clock = {kind: "wa", t0, from};
+      runPlayhead(gen);
       window.__decPlay = {segs, from, mode: "webaudio"};
       this.status("playing");
-      this.timers.push(setTimeout(() => { if (gen === this.gen) this.status(""); }, 1000 * end + 300));
+      this.timers.push(setTimeout(() => { if (gen === this.gen) this.stop(); }, 1000 * end + 300));
     } catch (e) {  // e.g. the page opened as a local file (fetch is blocked on file://): timed HTML audio instead
       if (gen !== this.gen) return;
       console.warn("Web Audio playback failed, using HTML audio:", e);
@@ -166,14 +176,27 @@ const player = {
     this.els = els;
     els.forEach((a, i) => this.timers.push(setTimeout(() => {
       if (gen !== this.gen) return;
-      const go = () => { try { a.currentTime = plan[i].off; } catch (e) {} return a.play(); };
+      const go = () => { try { a.currentTime = plan[i].off; } catch (e) {}
+        return a.play().then(() => { if (i === 0 && gen === this.gen) { this.clock = {kind: "perf", t0: performance.now(), from}; runPlayhead(gen); } }); };
       (a.readyState >= 1 ? go() : new Promise((r, j) => { a.addEventListener("loadedmetadata", r, {once: true}); a.addEventListener("error", () => j(new Error("load failed")), {once: true}); }).then(go))
         .catch(err => { if (gen === this.gen) this.status(`could not play audio (${err && err.name || "error"}); try another browser or open the page over http`, true); });
     }, 1000 * plan[i].when)));
+    els.forEach(a => a.addEventListener("ended", () => { if (gen === this.gen && els.every(x => x.ended)) this.stop(); }));
     window.__decPlay = {segs, from, mode: "html"};
     this.status("playing (basic mode)");
   }
 };
+function runPlayhead(gen) {  // moves a line over the piano roll at the playback position (piece time)
+  const ph = $("playhead");
+  const step = () => {
+    if (gen !== player.gen || !rollX) { ph.style.display = "none"; return; }
+    const t = player.now();
+    if (t == null || t > Math.min(player.endT, rollX.end)) { ph.style.display = "none"; if (t != null && t > player.endT + 2) return; }
+    else { ph.style.display = "block"; ph.style.left = rollX.X(Math.max(0, t)) + "px"; }
+    requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
 const sample = k => P.samples[k];
 const segOf = k => ({url: sample(k).clip, at: sample(k).start});
 function commits() {  // committed sample keys along the current path
@@ -192,7 +215,7 @@ function pieceEnd(extra) {
 function playPiece(extra, last2) {
   const segs = [{url: P.prefix_clip, at: 0}, ...commits().map(segOf), ...(extra ? [segOf(extra)] : [])];
   const end = pieceEnd(extra);
-  player.play(segs, last2 ? Math.max(0, end - (extra ? (sample(extra).bars + 1) : 2) * P.bar_s) : 0);
+  player.play(segs, last2 ? Math.max(0, end - (extra ? (sample(extra).bars + 1) : 2) * P.bar_s) : 0, end, extra);
 }
 const playInContext = k => playPiece(k, true);
 $("pstart").onclick = () => playPiece(null, false);
@@ -228,13 +251,13 @@ function gIndex(g) { return parseInt(String(g).replace(/\D/g, ""), 10) - 1; }
 function drawRoll() {
   const cv = $("roll"), w = cv.clientWidth || 700, h = 170, dpr = window.devicePixelRatio || 1;
   cv.width = w * dpr; cv.height = h * dpr; const g = cv.getContext("2d"); g.scale(dpr, dpr); g.clearRect(0, 0, w, h);
-  const cm = commits(), prev = S.hover;
+  const cm = commits(), prev = S.hover || S.playExtra;
   const end = Math.max(P.cut + 4 * P.bar_s, pieceEnd(prev)) + 0.3;
   const notes = P.prefix_notes.map(n => ({t: n[0], d: n[1], p: n[2], c: css("--rare")}));
   cm.forEach((k, i) => sample(k).notes.forEach(n => notes.push({t: sample(k).start + n[0], d: n[1], p: n[2], c: col(i)})));
   const pv = prev ? sample(prev).notes.map(n => ({t: sample(prev).start + n[0], d: n[1], p: n[2]})) : [];
   const ps = [...notes, ...pv].map(n => n.p), lo = Math.min(...ps) - 2, hi = Math.max(...ps) + 2;
-  const X = t => 4 + (w - 8) * t / end, Y = p => h - 6 - (h - 12) * (p - lo) / Math.max(hi - lo, 1);
+  const X = t => 4 + (w - 8) * t / end; rollX = {end, X}; const Y = p => h - 6 - (h - 12) * (p - lo) / Math.max(hi - lo, 1);
   g.strokeStyle = css("--line"); g.lineWidth = 1;
   for (let b = 0; P.cut - b * P.bar_s >= -1e-6; b++) { const x = X(P.cut - b * P.bar_s); g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); }
   for (let b = 1; P.cut + b * P.bar_s < end; b++) { const x = X(P.cut + b * P.bar_s); g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); }
@@ -243,7 +266,7 @@ function drawRoll() {
   notes.forEach(n => { g.fillStyle = n.c; g.fillRect(X(n.t), Y(n.p) - nh / 2, Math.max(2, X(n.t + n.d) - X(n.t)), nh); });
   g.setLineDash([3, 2]); g.strokeStyle = css("--accent"); g.lineWidth = 1.2;
   pv.forEach(n => g.strokeRect(X(n.t), Y(n.p) - nh / 2, Math.max(2, X(n.t + n.d) - X(n.t)), nh)); g.setLineDash([]);
-  $("rollCap").textContent = `Grey: the 4-bar opening (prefix); coloured: bars chosen so far (one colour per step)` + (prev ? "; dashed: the option under the cursor." : ".");
+  $("rollCap").textContent = `Grey: the 4-bar opening (prefix); coloured: bars chosen so far (one colour per step)` + (prev ? (S.hover ? "; dashed: the option under the cursor" : "; dashed: the option being played") : "") + "; moving line: playback position.";
 }
 
 // ------------------------------------------------------------------ pool map
