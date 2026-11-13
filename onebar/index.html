@@ -72,7 +72,7 @@ let P = D.prefixes[0], M = "rules", focus = null, current = null;
 
 $("sub").innerHTML = `${D.n_prefixes} POP909 prefixes × 64 generated one-bar continuations (three prefixes have 54–59; ${D.n_samples} in total). `
   + `Generator: ${esc(D.model)}. Clusters per prefix and method; titles by ${esc(D.namer)}. The map places similar continuations close together. `
-  + `<a href="../index.html">16-beat explorer</a>`;
+  + `<a href="../index.html">16-beat explorer</a> · <a href="../decisions/index.html">choosing a continuation (sequential vs coarse-to-fine)</a>`;
 $("psel").innerHTML = D.prefixes.map((p, i) => `<option value="${i}">${esc(p.title)} · ${esc(p.key || "")} · ${p.tempo} bpm (${p.id})</option>`).join("");
 $("mseg").innerHTML = Object.entries(D.prefixes[0].methods).map(([m, x]) => `<button data-m="${m}">${esc(x.label)}</button>`).join("");
 
