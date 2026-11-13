@@ -46,7 +46,6 @@ svg{width:100%;height:auto;display:block}
 .row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0 0 20px}
 .chip{background:var(--chip);border-radius:5px;padding:1px 7px;font-size:12px}
 .chip.ok{color:var(--ok)}.chip.bad{color:var(--bad)}
-.flag{color:var(--warn);font-size:12px;margin:4px 0 0 20px}
 .bar{height:5px;background:var(--chip);border-radius:3px;margin:6px 0 0 20px;overflow:hidden}
 .bar>div{height:100%;background:var(--accent)}
 .note{color:var(--muted);font-size:12.5px}
@@ -338,10 +337,6 @@ function drawTree(nodes, root, cur, title, cap, pickPath) {
 // ------------------------------------------------------------------ option cards
 function optionCard(o, k, sep, choose, extraRows) {
   const t = lensText(o);
-  // naming checks are heuristic; show only those about the text in the current view (lens views are checked separately)
-  const rel = (o.flags || []).filter(f => S.lens === "rhythm" ? f.startsWith("rhythm_view") : S.lens === "harmony" ? f.startsWith("harmony_view")
-    : S.lens === "plain" ? f.startsWith("plain view") : !/^(rhythm_view|harmony_view|plain view)/.test(f));
-  const flags = rel.length ? `<div class="flag" title="${esc(rel.join("; "))}">⚠ ${rel.length} naming check${rel.length > 1 ? "s" : ""} flagged for this view (hover)</div>` : "";
   return `<div class="card" data-k="${k}" data-med="${o.medoid}">
     <div class="ch"><span class="sw" style="background:${col(k)}"></span><div><span class="name">${esc(t.title)}</span>${t.fallback ? ' <span class="tag">(no lens text: choice type shown)</span>' : ""}</div>
       <span class="size">${pct(o.share)} · ${o.size ?? o.n} samples</span></div>
@@ -349,7 +344,7 @@ function optionCard(o, k, sep, choose, extraRows) {
     <div class="row">${t.title === o.type ? "" : `<span class="chip">${esc(o.type || "")}</span>`}${extraRows || ""}</div>
     <div class="bar"><div style="width:${pct(o.share)}"></div></div>
     <div class="row"><button class="b" data-play="${o.medoid}">▶ hear in context</button>
-      ${choose}</div>${flags}</div>`;
+      ${choose}</div></div>`;
 }
 function wire(panel) {
   panel.querySelectorAll("[data-play]").forEach(b => b.onclick = () => playInContext(b.dataset.play));
