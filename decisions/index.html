@@ -325,7 +325,7 @@ function planTable(d, committedFacts) {
   d.plan.forEach((preds, b) => {
     const f = committedFacts[b];
     const cells = preds.length ? preds.map(p => { const ok = f ? f[p.key] === p.value : null;
-      return `<span class="chip ${ok === true ? "ok" : ok === false ? "bad" : ""}">${esc(p.key.replace("_", " "))}: ${esc(String(p.value))} <span class="tag">${pct(p.share)} vs ${pct(p.pool_share)}</span>${ok === true ? " ✓" : ok === false ? " ✗" : ""}</span>`; }).join(" ")
+      return `<span class="chip ${ok === true ? "ok" : ok === false ? "bad" : ""}">${esc(p.key.replace("_", " "))}: ${esc(String(p.value))} <span class="tag">${pct(p.share)} vs ${pct(p.pool_share)}</span>${ok === true ? " ✓" : ok === false ? " ✗" : ""}${p.nested ? ` <span class="tag" title="nested with this fact, so not a separate constraint">(often: ${esc(p.nested.join(", "))})</span>` : ""}</span>`; }).join(" ")
       : `<span class="tag">no constraint</span>`;
     h += `<tr><td>${b + 1}</td><td>${cells}</td><td>${f ? esc(f.copy + " · " + f.chord_1 + " · " + f.density) : ""}</td></tr>`;
   });
