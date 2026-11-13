@@ -57,6 +57,8 @@ svg{width:100%;height:auto;display:block}
 .log li{margin:2px 0}
 canvas{width:100%;display:block;border-radius:6px}
 .rollwrap{position:relative}
+#roll{cursor:pointer}
+#barhover{position:absolute;top:0;bottom:0;left:0;width:0;background:var(--accent);opacity:.12;pointer-events:none;display:none;border-radius:3px}
 #playhead{position:absolute;top:0;bottom:0;left:0;width:2px;margin-left:-1px;background:var(--accent);pointer-events:none;display:none;box-shadow:0 0 6px var(--accent)}
 .plan td{padding:2px 6px;font-size:12.5px;vertical-align:top}
 .plan th{font-size:12px;color:var(--muted);text-align:left;padding:2px 6px}
@@ -90,7 +92,7 @@ a{color:var(--accent)}
     <div class="box"><h3>Candidate pool (2-D map)</h3><svg id="map" viewBox="0 0 440 300"></svg><div class="cap" id="mapCap"></div></div>
   </div>
   <div>
-    <div class="box" style="margin-bottom:10px"><h3>The music so far</h3><div class="rollwrap"><canvas id="roll" height="170"></canvas><div id="playhead" aria-hidden="true"></div></div><div class="cap" id="rollCap"></div></div>
+    <div class="box" style="margin-bottom:10px"><h3>The music so far</h3><div class="rollwrap"><canvas id="roll" height="170" title="Click a bar to play from its start"></canvas><div id="barhover" aria-hidden="true"></div><div id="playhead" aria-hidden="true"></div></div><div class="cap" id="rollCap"></div></div>
     <div id="panel"></div>
     <div class="box"><h3>Decision log</h3><ol class="log" id="log"></ol></div>
   </div>
@@ -218,6 +220,26 @@ function playPiece(extra, last2) {
   player.play(segs, last2 ? Math.max(0, end - (extra ? (sample(extra).bars + 1) : 2) * P.bar_s) : 0, end, extra);
 }
 const playInContext = k => playPiece(k, true);
+function barAt(x) {  // piano-roll x (px) -> start time of the bar under it, clamped to bars that contain music
+  const t = (x - 4) * rollX.end / (rollX.w - 8), b = P.bar_s, end = pieceEnd(null);
+  let s = P.cut + Math.floor((t - P.cut) / b + 1e-9) * b;
+  const last = P.cut + Math.ceil((end - P.cut) / b - 1e-6) * b - b;  // start of the last bar with music
+  s = Math.min(s, last);
+  const first = P.cut - Math.floor(P.cut / b + 1e-6) * b;  // first barline at or after 0
+  return s < first - 1e-6 ? 0 : s;
+}
+function rollPos(e) { const r = $("roll").getBoundingClientRect(); return e.clientX - r.left; }
+$("roll").addEventListener("click", e => {
+  if (!P || !rollX) return;
+  const s = barAt(rollPos(e));
+  player.play([{url: P.prefix_clip, at: 0}, ...commits().map(segOf)], s, pieceEnd(null));
+});
+$("roll").addEventListener("mousemove", e => {
+  if (!P || !rollX) return;
+  const s = barAt(rollPos(e)), x0 = rollX.X(s), x1 = rollX.X(Math.min(s + P.bar_s, rollX.end)), hb = $("barhover");
+  hb.style.display = "block"; hb.style.left = x0 + "px"; hb.style.width = Math.max(0, x1 - x0) + "px";
+});
+$("roll").addEventListener("mouseleave", () => { $("barhover").style.display = "none"; });
 $("pstart").onclick = () => playPiece(null, false);
 $("plast").onclick = () => playPiece(null, true);
 $("stop").onclick = () => player.stop();
@@ -257,7 +279,7 @@ function drawRoll() {
   cm.forEach((k, i) => sample(k).notes.forEach(n => notes.push({t: sample(k).start + n[0], d: n[1], p: n[2], c: col(i)})));
   const pv = prev ? sample(prev).notes.map(n => ({t: sample(prev).start + n[0], d: n[1], p: n[2]})) : [];
   const ps = [...notes, ...pv].map(n => n.p), lo = Math.min(...ps) - 2, hi = Math.max(...ps) + 2;
-  const X = t => 4 + (w - 8) * t / end; rollX = {end, X}; const Y = p => h - 6 - (h - 12) * (p - lo) / Math.max(hi - lo, 1);
+  const X = t => 4 + (w - 8) * t / end; rollX = {end, X, w}; const Y = p => h - 6 - (h - 12) * (p - lo) / Math.max(hi - lo, 1);
   g.strokeStyle = css("--line"); g.lineWidth = 1;
   for (let b = 0; P.cut - b * P.bar_s >= -1e-6; b++) { const x = X(P.cut - b * P.bar_s); g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); }
   for (let b = 1; P.cut + b * P.bar_s < end; b++) { const x = X(P.cut + b * P.bar_s); g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); }
@@ -266,7 +288,7 @@ function drawRoll() {
   notes.forEach(n => { g.fillStyle = n.c; g.fillRect(X(n.t), Y(n.p) - nh / 2, Math.max(2, X(n.t + n.d) - X(n.t)), nh); });
   g.setLineDash([3, 2]); g.strokeStyle = css("--accent"); g.lineWidth = 1.2;
   pv.forEach(n => g.strokeRect(X(n.t), Y(n.p) - nh / 2, Math.max(2, X(n.t + n.d) - X(n.t)), nh)); g.setLineDash([]);
-  $("rollCap").textContent = `Grey: the 4-bar opening (prefix); coloured: bars chosen so far (one colour per step)` + (prev ? (S.hover ? "; dashed: the option under the cursor" : "; dashed: the option being played") : "") + "; moving line: playback position.";
+  $("rollCap").textContent = `Grey: the 4-bar opening (prefix); coloured: bars chosen so far (one colour per step)` + (prev ? (S.hover ? "; dashed: the option under the cursor" : "; dashed: the option being played") : "") + "; moving line: playback position. Click a bar to play from it.";
 }
 
 // ------------------------------------------------------------------ pool map
