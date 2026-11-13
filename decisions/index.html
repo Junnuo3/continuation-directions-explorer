@@ -78,6 +78,7 @@ a{color:var(--accent)}
   <button class="b" id="pstart">▶ from the start</button>
   <button class="b" id="plast">▶ last 2 bars</button>
   <button class="b" id="stop">■ stop</button>
+  <span class="tag" id="pstat" role="status" aria-live="polite"></span>
 </div>
 <div class="layout">
   <div class="side">
@@ -116,25 +117,61 @@ $("psel").innerHTML = I.prefixes.map((p, i) => `<option value="${i}">${esc(p.tit
 
 // ------------------------------------------------------------------ audio
 const player = {
-  ctx: null, cache: new Map(), live: [],
+  ctx: null, cache: new Map(), live: [], els: [], timers: [], gen: 0,
+  status(msg, err) { const el = $("pstat"); if (el) { el.textContent = msg || ""; el.style.color = err ? "#b42318" : ""; } },
   buf(url) {
-    if (!this.cache.has(url)) this.cache.set(url, fetch(url).then(r => { if (!r.ok) throw new Error(url); return r.arrayBuffer(); }).then(b => this.ctx.decodeAudioData(b)));
+    if (!this.cache.has(url)) {
+      const p = fetch(url).then(r => { if (!r.ok) throw new Error(`${r.status} ${url}`); return r.arrayBuffer(); }).then(b => this.ctx.decodeAudioData(b));
+      p.catch(() => this.cache.delete(url));  // never keep a failed load
+      this.cache.set(url, p);
+    }
     return this.cache.get(url);
   },
-  stop() { this.live.forEach(s => { try { s.stop(); } catch (e) {} }); this.live = []; },
+  stop() {
+    this.gen++;
+    this.live.forEach(s => { try { s.stop(); } catch (e) {} }); this.live = [];
+    this.timers.forEach(clearTimeout); this.timers = [];
+    this.els.forEach(a => { try { a.pause(); } catch (e) {} }); this.els = [];
+    this.status("");
+  },
   async play(segs, from = 0) {  // segs: [{url, at}] with `at` = time in the piece (s); playback starts at piece time `from`
     this.stop();
-    if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-    await this.ctx.resume();
-    const bufs = await Promise.all(segs.map(s => this.buf(s.url)));
-    const t0 = this.ctx.currentTime + 0.06;
-    bufs.forEach((b, i) => {
-      let when = segs[i].at - from, off = 0;
-      if (when < 0) { off = -when; when = 0; }
-      if (off >= b.duration) return;
-      const s = this.ctx.createBufferSource(); s.buffer = b; s.connect(this.ctx.destination); s.start(t0 + when, off); this.live.push(s);
-    });
-    window.__decPlay = {segs, from};
+    const gen = this.gen;
+    const plan = segs.map(s => { let when = s.at - from, off = 0; if (when < 0) { off = -when; when = 0; } return {url: s.url, when, off}; });
+    this.status("loading…");
+    try {
+      if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      if (this.ctx.state !== "running") await this.ctx.resume();
+      const bufs = await Promise.all(plan.map(s => this.buf(s.url)));
+      if (gen !== this.gen) return;  // a newer click (or stop) superseded this one
+      const t0 = this.ctx.currentTime + 0.06;
+      let end = 0;
+      bufs.forEach((b, i) => {
+        const {when, off} = plan[i];
+        if (off >= b.duration) return;
+        const s = this.ctx.createBufferSource(); s.buffer = b; s.connect(this.ctx.destination); s.start(t0 + when, off); this.live.push(s);
+        end = Math.max(end, when + b.duration - off);
+      });
+      window.__decPlay = {segs, from, mode: "webaudio"};
+      this.status("playing");
+      this.timers.push(setTimeout(() => { if (gen === this.gen) this.status(""); }, 1000 * end + 300));
+    } catch (e) {  // e.g. the page opened as a local file (fetch is blocked on file://): timed HTML audio instead
+      if (gen !== this.gen) return;
+      console.warn("Web Audio playback failed, using HTML audio:", e);
+      this.htmlPlay(plan, gen, segs, from);
+    }
+  },
+  htmlPlay(plan, gen, segs, from) {
+    const els = plan.map(s => { const a = new Audio(s.url); a.preload = "auto"; return a; });
+    this.els = els;
+    els.forEach((a, i) => this.timers.push(setTimeout(() => {
+      if (gen !== this.gen) return;
+      const go = () => { try { a.currentTime = plan[i].off; } catch (e) {} return a.play(); };
+      (a.readyState >= 1 ? go() : new Promise((r, j) => { a.addEventListener("loadedmetadata", r, {once: true}); a.addEventListener("error", () => j(new Error("load failed")), {once: true}); }).then(go))
+        .catch(err => { if (gen === this.gen) this.status(`could not play audio (${err && err.name || "error"}); try another browser or open the page over http`, true); });
+    }, 1000 * plan[i].when)));
+    window.__decPlay = {segs, from, mode: "html"};
+    this.status("playing (basic mode)");
   }
 };
 const sample = k => P.samples[k];
