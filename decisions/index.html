@@ -327,7 +327,6 @@ function optionCard(o, k, sep, choose, extraRows) {
     <div class="row">${t.title === o.type ? "" : `<span class="chip">${esc(o.type || "")}</span>`}${extraRows || ""}</div>
     <div class="bar"><div style="width:${pct(o.share)}"></div></div>
     <div class="row"><button class="b" data-play="${o.medoid}">▶ hear in context</button>
-      ${(o.varied || []).map((v, i) => `<button class="b" data-play="${v}">▶ example ${i + 2}</button>`).join("")}
       ${choose}</div>${flags}</div>`;
 }
 function wire(panel) {
