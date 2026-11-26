@@ -24,3 +24,13 @@ An interactive prototype for three POP909 prefixes (pop909-316, -585 and -698). 
 Options can be described in full, by rhythm and texture, by harmony, or in plain words. Qwen3-32B wrote these descriptions from measured evidence; a deterministic choice-type label is always shown as well. When a view hides what separates two options, they are merged into one card so you can tell them apart by listening.
 
 Only the most common options were expanded. Others are marked *not generated*. No listening judgements have been collected: the groups are clusters, not validated categories. The method and results are in `docs/decisions_v1_report.md` of the research repository.
+
+## Accuracy progress: groups, names and steering (`accuracy/`)
+
+A progress page for the rules pipeline (built 2026-11-26):
+
+1. **Reading the music correctly.** The key now comes from all the music so far, and chord templates include 7ths. Both are validated against POP909's own annotations on held-out songs.
+2. **Groups and names.** Groups are now defined by musical facts and named from that definition, compared with the old clusters and Qwen names on the same samples, with audio.
+3. **Steering toward a target.** The real POP909 continuation is the target. At each of 4 bars, a continuation is picked by reading the group names, and the result is compared with random picks and plain sampling. The page has playable clips of the real continuation and of each pick.
+
+No listening judgements have been collected. Method and numbers: `docs/accuracy_v1_report.md` in the research repository.
