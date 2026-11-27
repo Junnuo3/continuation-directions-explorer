@@ -90,7 +90,7 @@ code{font-size:12px}
 <div class="wrap">
 <header>
   <div class="nav"><a href="../index.html">16-beat explorer</a> · <a href="../onebar/index.html">one-bar explorer</a> · <a href="../decisions/index.html">choosing a continuation</a></div>
-  <h1>Grouping and naming continuations: what changed, and which change matters</h1>
+  <h1>Four ways to group and name the same continuations</h1>
   <div class="sub" id="intro"></div>
 </header>
 <h2>1 · Listen and compare</h2>
@@ -105,7 +105,6 @@ the percentage is the share of members for which the claim holds. Grey chips sho
   <button class="b" id="pfx">▶ whole prefix</button>
   <button class="b" id="stop">■ stop</button>
 </div>
-<div class="small" id="pinfo" style="padding-top:6px"></div>
 <div class="layout">
   <div class="mapbox"><svg id="map" viewBox="0 0 500 500" role="img" aria-label="map of continuations"></svg>
     <div class="now" id="now">Click a point or a sample to listen.</div><div class="cross" id="cross"></div></div>
@@ -138,10 +137,8 @@ document.addEventListener("play", e => { document.querySelectorAll("audio").forE
 const aud = src => `<audio controls preload="none" src="${src}"></audio>`;
 
 // ---------------------------------------------------------------- intro
-$("intro").innerHTML = `The rules pipeline groups AMT's candidate continuations and names each group so a musician can choose a direction.
-This page compares the previous pipeline (A) with three changes applied one at a time (B, C, D) on the <b>same samples</b>, and lets you listen to every sample.
-Generator: AMT music-medium-800k, top-p 0.98. Namer: Qwen3-32B. Built ${A.created_at.slice(0, 16).replace("T", " ")} UTC.
-No listening data has been collected; the checks are symbolic.`;
+$("intro").innerHTML = `This page compares the previous pipeline (A) with three changes applied one at a time (B, C, D) on the <b>same samples</b>, and lets you listen to every sample.
+Generator: AMT music-medium-800k, top-p 0.98. Namer: Qwen3-32B.`;
 // ---------------------------------------------------------------- explorer
 const P0 = X.prefixes[0];
 
@@ -232,10 +229,6 @@ $("clusters").onclick = e => {
 };
 function render() {
   document.querySelectorAll("#mseg button").forEach(b => b.classList.toggle("on", b.dataset.m === M));
-  const ok = (a, b) => a === b ? "ok" : "bad";
-  $("pinfo").innerHTML = `<b>${esc(short(P.id))}</b> ${esc(P.title || "")} · ${P.split} · ${P.n} samples · key: old <span class="${ok(P.key_old, P.key_annot)}">${esc(P.key_old)}</span>
-    → new <span class="${ok(P.key_new, P.key_annot)}">${esc(P.key_new)}</span>${P.key_sig_only ? " (signature only)" : ""} · POP909 annotation ${esc(P.key_annot)}
-    <span class="muted">(A uses the old key; B–D the new one)</span>`;
   drawMap(); drawClusters(); drawCross();
   $("mapnote").textContent = M === "A" ? "Map: classical MDS of A's rules distance." : "Map: classical MDS of B's rules distance (new readings + melody block); C and D use the same map so you can see how the fact groups cut it.";
 }
