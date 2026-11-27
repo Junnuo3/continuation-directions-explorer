@@ -288,16 +288,18 @@ $("s4intro").innerHTML = `Can a user who knows what they want get there by readi
  picks the group whose name best matches what the real song does next (each checkable claim in a name counts +1 if the real bar has it, −1 if not) and keeps the group's
  typical sample; the next bar is generated from there. All four approaches use the same rule, prefixes and number of candidates; only their groups and names differ.
  Similarity to the real continuation, per bar and averaged: <b>facts</b> (opening chord, chord vs before, ending, melody reuse, contour, register, activity, accompaniment
- density), <b>pitch classes</b> (cosine of the notes' pitch-class content) and <b>rhythm</b> (cosine of the onset patterns on a 16th grid).`;
+ density), <b>pitch classes</b> (cosine of the notes' pitch-class content), <b>rhythm</b> (cosine of the onset patterns on a 16th grid) and
+ <b>density</b> (how close the number of notes is to the real bar's: the smaller count divided by the larger, so 0.5 means half or twice as many notes).
+ Facts, pitch classes and rhythm do not notice missing chord notes; density does.`;
 $("s4legend").innerHTML = `<span class="sw2" style="background:#d6409f"></span>melody of the chosen continuation<span class="sw2" style="background:#4f9d69"></span>accompaniment
  <span class="sw2" style="background:var(--ink);opacity:.25"></span>real continuation (background)<span class="sw2" style="background:var(--muted)"></span>last prefix bar.
- Above each bar: the group that was chosen; hover for all the options and their scores. Below: facts matched in that bar.`;
+ Above each bar: the group that was chosen; hover for all the options and their scores. Below: facts matched in that bar, and notes in that bar / in the real bar.`;
 function s4table() {
   const D = S4[S4B]; if (!D) { $("s4table").innerHTML = '<span class="muted">not available yet</span>'; return; }
   const S = D.summary, rows = CONDS.filter(c => S[c]).map(c => [P0.methods[c].label, S[c], c === "D"]);
   if (S.free) rows.push(["Plain AMT, no choice (reference)", S.free, false]);
-  $("s4table").innerHTML = `<table><tr><th>Average over ${D.prefixes.length} prefixes, ${S4B} bars</th><th class="num">Facts matched</th><th class="num">Pitch-class similarity</th><th class="num">Rhythm similarity</th></tr>
-   ${rows.map(([l, r]) => `<tr><td>${esc(l)}</td><td class="num"><b>${pct(r.fact_match)}</b></td><td class="num">${(r.pitch_class ?? 0).toFixed(2)}</td><td class="num">${(r.rhythm ?? 0).toFixed(2)}</td></tr>`).join("")}</table>
+  $("s4table").innerHTML = `<table><tr><th>Average over ${D.prefixes.length} prefixes, ${S4B} bars</th><th class="num">Facts matched</th><th class="num">Pitch-class similarity</th><th class="num">Rhythm similarity</th><th class="num">Density similarity</th></tr>
+   ${rows.map(([l, r]) => `<tr><td>${esc(l)}</td><td class="num"><b>${pct(r.fact_match)}</b></td><td class="num">${(r.pitch_class ?? 0).toFixed(2)}</td><td class="num">${(r.rhythm ?? 0).toFixed(2)}</td><td class="num">${r.density == null ? "–" : r.density.toFixed(2)}</td></tr>`).join("")}</table>
    <div class="small muted" style="margin-top:4px">Similarities run from 0 (unrelated) to 1 (identical). Three prefixes is a demonstration, not a statistical test; listen to the rolls below.</div>`;
 }
 function s4stopAll() { if (s4audio) { s4audio.pause(); s4audio = null; } cancelAnimationFrame(s4raf); s4playing = null;
@@ -322,7 +324,7 @@ function s4render() {
   const p = D.prefixes[Math.min(S4P, D.prefixes.length - 1)], lo = p.lo, hi = p.hi, nb = hi - lo;
   const all = [p.truth.notes, ...CONDS.map(c => p.conds[c].notes)].flat();
   let pmin = Math.min(...all.map(n => n[2])) - 2, pmax = Math.max(...all.map(n => n[2])) + 2;
-  const rowh = 5.2, H = (pmax - pmin + 1) * rowh, top = 30, bottom = 18, left = 34;
+  const rowh = 5.2, H = (pmax - pmin + 1) * rowh, top = 30, bottom = 31, left = 34;
   const avail = Math.max(600, Math.min(1180, document.querySelector(".wrap").clientWidth - 40));
   const pb = Math.max(nb > 40 ? 22 : 0, (avail - left - 6) / nb), W = left + nb * pb + 6;
   const y = m => top + (pmax - m) * rowh, x = b => left + (b - lo) * pb;
@@ -343,12 +345,14 @@ function s4render() {
       const label = ch.name.length * 6.2 > 4 * pb - 6 ? ch.name.slice(0, Math.max(3, Math.floor((4 * pb - 10) / 6.2))) + "…" : ch.name;
       g += `<g><title>${esc(tipTxt)}</title><text class="barlab" x="${bx + 3}" y="${top - 8}">${esc(label)}</text></g>`;
       if (fm != null) g += `<text class="barsc" x="${bx + 3}" y="${top + H + 13}">facts ${pct(fm)}</text>`;
+      const nc = cd.per_bar.notes, ng = cd.per_bar.notes_real;
+      if (nc && ng) g += `<g><title>${nc[k]} notes start in this bar; the real bar has ${ng[k]}</title><text class="barsc" x="${bx + 3}" y="${top + H + 26}">notes ${nc[k]} / ${ng[k]}</text></g>`;
     });
     g += `<text class="barsc" x="${x(lo) + 3}" y="${top - 8}">prefix</text>`;
     g += `<line class="playhead" data-k="${c}" data-x0="${left}" data-pb="${pb}" x1="0" x2="0" y1="${top}" y2="${top + H}" stroke="var(--accent)" stroke-width="2" visibility="hidden"/>`;
     const mn = cd.mean || {};
     html += `<div class="roll"><div class="rh"><span class="nm">${esc(P0.methods[c].label)}</span><button class="b s4play" data-k="${c}">▶ play</button>
-      <span class="sc">facts ${pct(mn.fact_match)} · pitch classes ${(mn.pitch_class ?? 0).toFixed(2)} · rhythm ${(mn.rhythm ?? 0).toFixed(2)}</span></div>
+      <span class="sc">facts ${pct(mn.fact_match)} · pitch classes ${(mn.pitch_class ?? 0).toFixed(2)} · rhythm ${(mn.rhythm ?? 0).toFixed(2)}${mn.density == null ? "" : ` · density ${mn.density.toFixed(2)}`}</span></div>
       <div class="rollsvg"><svg width="${W}" height="${top + H + bottom}" viewBox="0 0 ${W} ${top + H + bottom}" role="img" aria-label="piano roll ${c}">${g}</svg></div></div>`;
   }
   $("s4rolls").innerHTML = html;
