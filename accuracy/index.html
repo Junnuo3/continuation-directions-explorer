@@ -3,266 +3,385 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cluster Accuracy Progress</title>
+<title>Grouping and Naming Compared</title>
 <style>
-:root{--bg:#fbfaf7;--panel:#fff;--ink:#1d1d1f;--muted:#6b6b70;--line:#e3e1db;--accent:#2f5d8a;--accent2:#9db7d3;--chip:#f1efe9;--ok:#2d7a4b;--bad:#a83a3a;--warn:#a5621b;
-  --k0:#2f7d4f;--k1:#c0573a;--k2:#d39b2a;--k3:#7d6fb0}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161618;--panel:#1f1f22;--ink:#ececee;--muted:#a0a0a8;--line:#34343a;--accent:#8fb8e3;--accent2:#3f5f80;--chip:#2a2a2f;--ok:#6fc28f;--bad:#e07a7a;--warn:#e0a35a;
-  --k0:#5fb784;--k1:#e0805f;--k2:#e3b54e;--k3:#a596db}}
-:root[data-theme="dark"]{--bg:#161618;--panel:#1f1f22;--ink:#ececee;--muted:#a0a0a8;--line:#34343a;--accent:#8fb8e3;--accent2:#3f5f80;--chip:#2a2a2f;--ok:#6fc28f;--bad:#e07a7a;--warn:#e0a35a;
-  --k0:#5fb784;--k1:#e0805f;--k2:#e3b54e;--k3:#a596db}
+:root{--bg:#fbfaf7;--panel:#fff;--ink:#1d1d1f;--muted:#6b6b70;--line:#e3e1db;--accent:#2f5d8a;--accent2:#9db7d3;--chip:#f1efe9;--rare:#b4b4b8;
+  --ok:#2d7a4b;--bad:#a83a3a;--warn:#9a6a12;--okbg:#e6f2ea;--badbg:#f7e6e6;--warnbg:#f6eedc}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161618;--panel:#1f1f22;--ink:#ececee;--muted:#a0a0a8;--line:#34343a;--accent:#8fb8e3;--accent2:#3f5f80;--chip:#2a2a2f;--rare:#6b6b72;
+  --ok:#6fc28f;--bad:#e07a7a;--warn:#e0b25a;--okbg:#1f3328;--badbg:#3a2224;--warnbg:#3a3020}}
+:root[data-theme="dark"]{--bg:#161618;--panel:#1f1f22;--ink:#ececee;--muted:#a0a0a8;--line:#34343a;--accent:#8fb8e3;--accent2:#3f5f80;--chip:#2a2a2f;--rare:#6b6b72;
+  --ok:#6fc28f;--bad:#e07a7a;--warn:#e0b25a;--okbg:#1f3328;--badbg:#3a2224;--warnbg:#3a3020}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
-.wrap{max-width:1180px;margin:0 auto;padding:0 16px 40px}
-header{padding:18px 0 6px}
-h1{font-size:21px;margin:0 0 4px}
-h2{font-size:17px;margin:30px 0 6px;padding-top:10px;border-top:1px solid var(--line)}
-h3{font-size:13px;margin:14px 0 6px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
-.sub{color:var(--muted);max-width:900px}
+.wrap{max-width:1240px;margin:0 auto;padding:0 16px 40px}
+header{padding:16px 0 4px}
+h1{font-size:20px;margin:0 0 4px}
+h2{font-size:17px;margin:28px 0 6px;padding-top:10px;border-top:1px solid var(--line)}
+h3{font-size:12.5px;margin:14px 0 6px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+.sub{color:var(--muted);max-width:940px}
 a{color:var(--accent)}
 .nav{font-size:13px;color:var(--muted);margin-bottom:6px}
-.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin:14px 0}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:12px 0}
 .tile{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
 .tile .lab{font-size:12.5px;color:var(--muted)}
-.tile .big{font-size:24px;font-weight:650;margin:2px 0}
-.tile .big .from{font-size:16px;color:var(--muted);font-weight:500}
+.tile .big{font-size:23px;font-weight:650;margin:2px 0}
+.tile .big .from{font-size:15px;color:var(--muted);font-weight:500}
 .tile .note{font-size:12px;color:var(--muted)}
 .box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:8px 0}
 table{border-collapse:collapse;width:100%;font-size:13px}
-th,td{border-bottom:1px solid var(--line);padding:5px 6px;text-align:left;vertical-align:top}
+th,td{border-bottom:1px solid var(--line);padding:5px 7px;text-align:left;vertical-align:top}
 th{color:var(--muted);font-weight:600;font-size:12px}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .scroll{overflow-x:auto}
-.ok{color:var(--ok)}.bad{color:var(--bad)}.muted{color:var(--muted)}
-.chip{display:inline-block;background:var(--chip);border-radius:5px;padding:1px 7px;font-size:12px;margin:2px 3px 0 0}
+.ok{color:var(--ok)}.bad{color:var(--bad)}.warn{color:var(--warn)}.muted{color:var(--muted)}.small{font-size:12.5px}
 .seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:7px;overflow:hidden}
 .seg button{border:0;background:var(--panel);color:var(--ink);padding:5px 11px;font:inherit;font-size:13px;cursor:pointer}
 .seg button.on{background:var(--accent);color:var(--bg)}
+button.b{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:6px;padding:4px 10px;font:inherit;font-size:13px;cursor:pointer}
 select{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:5px 8px;font:inherit;max-width:100%}
-.cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-@media (max-width:860px){.cols{grid-template-columns:1fr}}
+label{font-size:13px;color:var(--muted)}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:3}
+.layout{display:grid;grid-template-columns:minmax(280px,500px) 1fr;gap:16px;padding:12px 0 10px}
+@media (max-width:860px){.layout{grid-template-columns:1fr}}
+.mapbox{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:6px;position:sticky;top:58px;align-self:start}
+@media (max-width:860px){.mapbox{position:static}}
+svg{width:100%;height:auto;display:block}
+svg circle{cursor:pointer}
+.now{font-size:12.5px;color:var(--muted);padding:4px 4px 2px;min-height:20px}
+.cross{font-size:12.5px;padding:4px;border-top:1px solid var(--line);margin-top:4px}
+.cross div{display:flex;gap:6px;align-items:baseline}
+.cross b{min-width:16px}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:9px 11px;margin-bottom:8px}
-.card .t{display:flex;gap:8px;align-items:baseline}
-.card .name{font-weight:620}
-.card .share{margin-left:auto;color:var(--muted);font-size:12.5px;white-space:nowrap}
-.card .d{font-size:13px;margin-top:2px}
+.card.sel{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.ch{display:flex;align-items:center;gap:8px;cursor:pointer}
+.sw{width:12px;height:12px;border-radius:3px;flex:none}
+.name{font-weight:620}
+.size{margin-left:auto;color:var(--muted);font-size:12.5px;white-space:nowrap}
+.desc{font-size:13px;margin:2px 0 0 20px}
+.row{margin:5px 0 0 20px;display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.row .lab{font-size:11.5px;color:var(--muted);margin-right:2px}
+.cl{font-size:12px;border-radius:5px;padding:1px 7px;border:1px solid transparent}
+.cl.ok{background:var(--okbg);color:var(--ok)}.cl.bad{background:var(--badbg);color:var(--bad)}.cl.warn{background:var(--warnbg);color:var(--warn)}
+.fx{font-size:12px;background:var(--chip);border-radius:5px;padding:1px 7px}
+.members{display:flex;flex-wrap:wrap;gap:4px;margin:7px 0 0 20px}
+.m{border:1px solid var(--line);background:var(--chip);color:var(--ink);border-radius:5px;padding:1px 6px;font:12px ui-monospace,SFMono-Regular,Menlo,monospace;cursor:pointer}
+.m.rep{border-color:var(--ink);font-weight:600}
+.m.on{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.more{font-size:12px;color:var(--accent);cursor:pointer;border:0;background:none;padding:1px 4px}
 audio{width:100%;height:32px;margin-top:6px}
-.aud2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.claim{font-size:12px;margin-top:4px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px}
+.pl{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:8px 10px}
+.pl.truth{border-color:var(--ok)}.pl.ours{border-color:var(--accent)}
+.pl .h{font-weight:600;font-size:13px;display:flex;gap:6px}
+.pl .h .sc{margin-left:auto;color:var(--muted);font-weight:500}
 .bars{display:flex;flex-direction:column;gap:7px;margin:8px 0}
-.brow{display:grid;grid-template-columns:230px 1fr 64px;gap:8px;align-items:center;font-size:13px}
-@media (max-width:640px){.brow{grid-template-columns:120px 1fr 52px}}
+.brow{display:grid;grid-template-columns:240px 1fr 56px;gap:8px;align-items:center;font-size:13px}
+@media (max-width:640px){.brow{grid-template-columns:120px 1fr 48px}}
 .btrack{height:14px;background:var(--chip);border-radius:4px;position:relative}
 .bfill{position:absolute;left:0;top:0;bottom:0;background:var(--accent2);border-radius:0 4px 4px 0}
 .bfill.hi{background:var(--accent)}
-.stack{display:flex;height:22px;border-radius:5px;overflow:hidden;gap:2px;background:var(--panel)}
-.stack>div{height:100%}
-.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12.5px;margin:6px 0}
-.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;background:var(--c)}
-.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px}
-.pl{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:8px 10px}
-.pl.truth{border-color:var(--ok)}
-.pl.ours{border-color:var(--accent)}
-.pl .h{font-weight:600;font-size:13px;display:flex;gap:6px}
-.pl .h .sc{margin-left:auto;color:var(--muted);font-weight:500}
-.tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--bg);font-size:12px;padding:4px 7px;border-radius:5px;display:none;z-index:9;max-width:320px}
 details{margin:8px 0}
 summary{cursor:pointer;color:var(--accent)}
 ul.lim li{margin:4px 0}
-.small{font-size:12.5px}
+code{font-size:12px}
 </style>
 </head>
 <body>
 <div class="wrap">
 <header>
   <div class="nav"><a href="../index.html">16-beat explorer</a> · <a href="../onebar/index.html">one-bar explorer</a> · <a href="../decisions/index.html">choosing a continuation</a></div>
-  <h1>More accurate groups and names, and does choosing by name steer the music?</h1>
+  <h1>Grouping and naming continuations: what changed, and which change matters</h1>
   <div class="sub" id="intro"></div>
 </header>
 <div class="tiles" id="tiles"></div>
 
-<h2>1 · Why the old names were often wrong</h2>
-<div class="sub">We checked every claim in the old group names (Qwen3-32B, prompt v4) against the music of every group member, on the
-same samples, for all 106 steps of the three decision trees (316 / 585 / 698).</div>
-<div class="box" id="claims"></div>
-<h3>Key: old estimate vs new estimate vs POP909 annotation</h3>
-<div class="sub small">The old key came from note durations in the 16 prefix beats only (Krumhansl–Kessler), which pulls toward a long-held chord
-(316: the prefix lingers on Ab, so Ab major was chosen instead of Db major). The new key uses no training data:
-Temperley–Kostka–Payne profile on note onsets, all the music before the cutoff, and the tonic chord the music dwells on to decide major vs relative minor.</div>
-<div class="box scroll" id="keys"></div>
+<h2>1 · Four ways to group and name the same continuations</h2>
+<div class="sub">Each step changes one thing. <b>A → B</b>: only the reading of the music (key, chords, melody vs accompaniment) changes; the clustering
+method and the Qwen prompt stay the same. <b>B → C</b>: only the grouping changes (distance clusters → groups defined by musical facts), with the same Qwen prompt.
+<b>C → D</b>: only the naming changes (Qwen → names written from each group's definition). Every claim a name or description makes (a chord, "busier", "higher",
+"reuses P3", "melody rises", …) is checked against every member of the group, using the corrected readings.</div>
+<div class="box scroll" id="condtable"></div>
+<div style="margin:6px 0"><span class="seg" id="setseg"></span></div>
+<div class="box scroll" id="scoretable"></div>
 
-<h2>2 · Old groups and names vs new groups and names (same samples)</h2>
-<div class="sub">The first one-bar choice after each prefix. Old: rules-distance clusters named by Qwen3-32B. New: groups <b>defined</b> by musical facts
-(opening chord first, then the most informative melody / texture / chord-relation fact), named from that definition. Each claim chip shows the share of
-group members for which it is true (checked with the corrected key and chords).</div>
-<div style="margin:8px 0"><span class="seg" id="devsel"></span></div>
-<div id="devprefix"></div>
-<div class="cols"><div><h3>Old</h3><div id="oldg"></div></div><div><h3>New</h3><div id="newg"></div></div></div>
+<h2>2 · Listen and compare</h2>
+<div class="sub">One prefix at a time: its 256 one-bar continuations from AMT, grouped and named by each approach. Click a point or a sample to hear the last
+prefix bar followed by that continuation. The panel under the map shows the group of the selected sample under every approach. Claim chips: <span class="cl ok">true</span>
+for ≥ 60% of the group and ≥ 20 points more than in the other groups · <span class="cl warn">true but not distinctive</span> · <span class="cl bad">false for most members</span>;
+the percentage is the share of members for which the claim holds. Grey chips show what the members actually do.</div>
+<div class="controls">
+  <select id="psel"></select>
+  <span class="seg" id="mseg"></span>
+  <label><input type="checkbox" id="lead" checked> play the last prefix bar first</label>
+  <button class="b" id="pfx">▶ whole prefix</button>
+  <button class="b" id="stop">■ stop</button>
+</div>
+<div class="small" id="pinfo" style="padding-top:6px"></div>
+<div class="layout">
+  <div class="mapbox"><svg id="map" viewBox="0 0 500 500" role="img" aria-label="map of continuations"></svg>
+    <div class="now" id="now">Click a point or a sample to listen.</div><div class="cross" id="cross"></div></div>
+  <div id="clusters"></div>
+</div>
+<div class="small muted" id="mapnote"></div>
 
-<h2>3 · Steering toward the real song</h2>
+<h2>3 · Steering toward the real song (approach D)</h2>
 <div class="sub" id="steerintro"></div>
 <div class="box"><div id="steerchart"></div><div class="small muted" id="steernote"></div></div>
 <div style="margin:10px 0"><select id="steersel"></select></div>
 <div id="steerprefix"></div>
 <div class="grid3" id="steerplayers"></div>
-<h3>Bar by bar: what the real song does vs what each pick does</h3>
-<div class="box scroll" id="steertable"></div>
+<details><summary>Bar by bar: what the real song does vs what each pick does</summary><div class="box scroll" id="steertable"></div></details>
 
-<h2>4 · Limitations and next steps</h2>
+<h2>4 · Reading the music</h2>
+<div class="box scroll" id="keys"></div>
+
+<h2>5 · Limitations</h2>
 <ul class="lim" id="lims"></ul>
 <details><summary>Method details</summary><div class="small" id="method"></div></details>
 </div>
-<div class="tip" id="tip"></div>
 <script src="data/acc.js"></script>
 <script>
-const A = window.ACC, $ = s => document.querySelector(s);
+"use strict";
+const A = window.ACC, X = A.explorer, $ = id => document.getElementById(id);
 const pct = x => x == null ? "–" : Math.round(100 * x) + "%";
-const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const f2 = x => x == null ? "–" : x.toFixed(2);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
 const short = p => p.replace("pop909-", "").replace(/-win.*/, "");
-// one audio at a time
+const PAL = ["#4e79a7", "#f28e2b", "#59a14f", "#e15759", "#b07aa1", "#76b7b2", "#edc948", "#9c755f"];
+const rareColor = () => getComputedStyle(document.documentElement).getPropertyValue("--rare").trim();
+const col = k => k == null || k < 0 ? rareColor() : PAL[k % PAL.length];
+const CONDS = ["A", "B", "C", "D"];
+const CATCLS = {"ok": "ok", "not distinctive": "warn", "false for most members": "bad"};
 document.addEventListener("play", e => { document.querySelectorAll("audio").forEach(a => { if (a !== e.target) a.pause(); }); }, true);
-const tip = $("#tip");
-function hover(el, html) { el.addEventListener("mousemove", e => { tip.innerHTML = html; tip.style.display = "block"; tip.style.left = (e.clientX + 12) + "px"; tip.style.top = (e.clientY + 12) + "px"; });
-  el.addEventListener("mouseleave", () => tip.style.display = "none"); }
 const aud = src => `<audio controls preload="none" src="${src}"></audio>`;
-const FACT_NAMES = {chord: "opening chord", chord_rel: "chord vs before", ends_home: "ending", mel_repeat_type: "melody reuse", mel_contour: "melody contour",
-  mel_register: "melody register", mel_activity: "melody activity", acc_density: "accompaniment density", mel_rhythm: "melody rhythm",
-  acc_repeat_type: "accompaniment"};
 
-// ------------------------------------------------------------------ intro + tiles
-const K = A.keys.validation, C = A.keys.chords, S = A.dev.summary, ST = A.steer.summary.heldout || {};
-$("#intro").innerHTML = `Three connected changes to the rules pipeline: (1) read the music correctly (key from all the music so far, chords with 7ths,
-melody separated from accompaniment), (2) define each group by musical facts so that its name is true for every member, and (3) test whether choosing
-groups by their names can steer AMT toward a target, using the real POP909 continuation as the target. Melody/accompaniment split: <b>${A.melody_source === "midibert" ? "MidiBERT-Piano" : "fallback top-voice rule"}</b>.
-Built ${A.created_at.slice(0, 16).replace("T", " ")} UTC. No listening data has been collected; judge the audio yourself.`;
+// ---------------------------------------------------------------- intro + tiles
+const K = A.keys.validation, C = A.keys.chords, MV = A.melody_validation;
+const SUM = X.summary;
+$("intro").innerHTML = `The rules pipeline groups AMT's candidate continuations and names each group so a musician can choose a direction.
+This page compares the previous pipeline (A) with three changes applied one at a time (B, C, D) on the <b>same samples</b>, and lets you listen to every sample.
+Generator: AMT music-medium-800k, top-p 0.98. Namer: Qwen3-32B. Built ${A.created_at.slice(0, 16).replace("T", " ")} UTC.
+No listening data has been collected; the checks are symbolic.`;
+const H = SUM.heldout || {}, Dv = SUM.dev || {};
+const mf = MV && (MV.lead || MV.summary || null);
 const tiles = [
   ["Key correct (held-out POP909 songs)", pct(K.ctx.exact), pct(K.old.exact), `key signature ${pct(K.old.key_signature)} → ${pct(K.ctx.key_signature)} · ${K.ctx.n} windows`],
-  ["Chord correct (held-out half-bars)", pct(C.new.majmin_correct), pct(C.old.majmin_correct), `unclear ${pct(C.old.majmin_unclear)} → ${pct(C.new.majmin_unclear)} · vs POP909 chord labels`],
-  ["Name claims true for most members and distinctive", pct(S.new_claims.ok), pct(S.old_claims.ok), `avg share of members a claim is true for: ${pct(S.old_claims.mean_member_share)} → ${pct(S.new_claims.mean_member_share)}`],
+  ["Chord correct (held-out half-bars)", pct(C.new.majmin_correct), pct(C.old.majmin_correct), `unclear ${pct(C.old.majmin_unclear)} → ${pct(C.new.majmin_unclear)}`],
+  ["Name claims true & distinctive, held-out (A → B → C → D)", pct(H.D && H.D.ok), pct(H.A && H.A.ok),
+   `A ${pct(H.A && H.A.ok)} · B ${pct(H.B && H.B.ok)} · C ${pct(H.C && H.C.ok)} · D ${pct(H.D && H.D.ok)} (${(H.A || {}).pools || 0} prefixes)`],
+  ["Same, 106 dev pools (3 decision trees)", pct(Dv.D && Dv.D.ok), pct(Dv.A && Dv.A.ok),
+   `A ${pct(Dv.A && Dv.A.ok)} · B ${pct(Dv.B && Dv.B.ok)} · C ${pct(Dv.C && Dv.C.ok)} · D ${pct(Dv.D && Dv.D.ok)}`],
 ];
-if (ST.label) tiles.push(["Target facts matched, choosing by name (held-out)", pct(ST.label.fact_match), null,
-  `random group ${pct(ST.random?.fact_match)} · most common group ${pct(ST.largest?.fact_match)} · plain sampling ${pct(ST.free?.fact_match)}`]);
-$("#tiles").innerHTML = tiles.map(([l, n, o, note]) => `<div class="tile"><div class="lab">${l}</div><div class="big">${o ? `<span class="from">${o} →</span> ` : ""}${n}</div><div class="note">${note}</div></div>`).join("");
+$("tiles").innerHTML = tiles.map(([l, n, o, note]) => `<div class="tile"><div class="lab">${l}</div><div class="big">${o ? `<span class="from">${o} →</span> ` : ""}${n}</div><div class="note">${note}</div></div>`).join("");
 
-// ------------------------------------------------------------------ section 1
-(function () {
-  const cats = [["ok", "true and distinctive", "--k0"], ["(a) feature error", "wrong reading (key / chord / features)", "--k1"],
-                ["(b) mixed group", "group too mixed (true for < 60%)", "--k2"], ["(c) not distinctive", "true but other groups too", "--k3"]];
-  const row = (lab, o, n) => `<div class="brow"><div>${lab}</div><div class="stack">${cats.map(([k, t, c]) => o[k] ? `<div data-k="${k}" style="width:${100 * o[k]}%;background:var(${c})" data-t="${esc(t)}: ${pct(o[k])}"></div>` : "").join("")}</div><div class="small muted">${n} claims</div></div>`;
-  $("#claims").innerHTML = `<div class="legend">${cats.map(([k, t, c]) => `<span style="--c:var(${c})">${t}</span>`).join("")}</div>
-   <div class="bars">${row("Old names (Qwen3-32B v4)", S.old_claims, S.old_claims.n)}${row("New names (from the definition)", S.new_claims, S.new_claims.n)}</div>
-   <div class="small muted">Old chord claims: ${Object.entries(S.old_claims.by_kind.chord || {}).map(([k, v]) => `${k} ${v}`).join(" · ")}.
-   Most wrong chord claims come from the wrong key (2 of the 3 prefixes). Density / register / reuse claims were also re-checked with the new melody-aware
-   definitions, so part of their "wrong reading" share reflects the changed definitions, not only errors. New names are true by construction
-   (the definition) plus secondary facts listed only when they hold for ≥ 80% of members.</div>`;
-  document.querySelectorAll("#claims .stack>div").forEach(d => hover(d, d.dataset.t));
-  const kr = A.keys.prefixes;
-  const ok = (b) => b ? `<span class="ok">✓</span>` : `<span class="bad">✗</span>`;
-  $("#keys").innerHTML = `<table><tr><th>Prefix</th><th>Set</th><th>POP909 annotation</th><th>Old estimate</th><th>New estimate (song so far)</th><th>New, 16 beats only</th></tr>
-   ${kr.map(r => `<tr><td>${short(r.prefix)}</td><td class="muted">${r.split}</td><td>${r.annotated}</td><td>${ok(r.old_ok)} ${r.old}</td><td>${ok(r.new_ok)} ${r.new}${r.new_signature_only ? ' <span class="muted">(signature only)</span>' : ""}</td><td class="muted">${r.new_prefix_only}</td></tr>`).join("")}
-   <tr><th colspan="3">Correct</th><th>${kr.filter(r => r.old_ok).length} / ${kr.length}</th><th>${kr.filter(r => r.new_ok).length} / ${kr.length}</th><th></th></tr></table>
-   <div class="small muted">Over ${K.ctx.n} held-out POP909 windows: old ${pct(K.old.exact)} exact (a fifth off in ${pct(K.old.fifth)}); new with 16 beats only ${pct(K.win.exact)};
-   new with the song so far ${pct(K.ctx.exact)} (remaining errors mostly major vs relative minor, ${pct(K.ctx.relative)}). When the major/minor decision is uncertain the
-   new labels fall back to the key signature (home = I or vi).</div>`;
-})();
+// ---------------------------------------------------------------- section 1
+const P0 = X.prefixes[0];
+$("condtable").innerHTML = `<table><tr><th></th><th>Reading of the music</th><th>Grouping</th><th>Naming</th></tr>${CONDS.map(c => { const m = P0.methods[c];
+  return `<tr><td><b>${esc(m.label)}</b></td><td>${m.features === "old" ? "old: key from 16 beats (KK), triad chords, no melody split" : "new: key from the song so far, triad + 7th chords, MidiBERT melody split"}</td>
+  <td>${m.grouping === "fact tree" ? "groups defined by facts (opening chord, then one stable split)" : "rules-distance clusters" + (m.features === "new" ? " (same method; new key/chords + a melody block)" : "")}</td>
+  <td>${m.naming === "template" ? "written from the group's definition + facts true for ≥ 80% of members" : "Qwen3-32B, same prompt format, shown the group's facts"}</td></tr>`; }).join("")}</table>`;
+let SET = "heldout";
+const SETS = {heldout: "Held-out (15 prefixes, first bar)", dev: "Dev (106 pools of the 3 decision trees)", page_all: "All 18 prefixes on this page"};
+$("setseg").innerHTML = Object.entries(SETS).filter(([k]) => SUM[k]).map(([k, t]) => `<button data-s="${k}">${t}</button>`).join("");
+$("setseg").onclick = e => { const s = e.target.dataset.s; if (s) { SET = s; scoreTable(); } };
+function scoreTable() {
+  document.querySelectorAll("#setseg button").forEach(b => b.classList.toggle("on", b.dataset.s === SET));
+  const S = SUM[SET] || {};
+  const cols = [["Claims true & distinctive", r => pct(r.ok), true], ["True but not distinctive", r => pct(r["not distinctive"])],
+    ["False for most members", r => pct(r["false for most members"])], ["Avg share of members a claim holds for", r => pct(r.mean_member_share)],
+    ["Checkable claims", r => r.claims], ["Claims per group", r => f2(r.claims_per_group)], ["Groups per pool", r => f2(r.k)],
+    ["Samples in a named group", r => pct(r.assigned)], ["Category utility (facts)", r => f2(r.cu)], ["Silhouette (B distance)", r => f2(r.silhouette_B)]];
+  $("scoretable").innerHTML = `<table><tr><th></th>${cols.map(([t]) => `<th class="num">${t}</th>`).join("")}</tr>${CONDS.filter(c => S[c]).map(c =>
+    `<tr><td><b>${esc(P0.methods[c].label)}</b></td>${cols.map(([, f, hi]) => `<td class="num">${hi ? "<b>" + f(S[c]) + "</b>" : f(S[c])}</td>`).join("")}</tr>`).join("")}</table>
+    ${(X.paired || {})[SET] ? `<div class="small" style="margin-top:6px">Paired over pools (share of claims true & distinctive; sign test): ${Object.entries(X.paired[SET]).map(([k, v]) =>
+      `${k.replace("->", " → ")}: better in ${v.better}, worse in ${v.worse}, tied ${v.ties} (p = ${v.p < 0.001 ? v.p.toExponential(0) : v.p})`).join(" · ")}.</div>` : ""}
+    ${S.C_named ? `<div class="small" style="margin-top:6px">Without the heterogeneous "Other" group of the fact tree: C ${pct(S.C_named.ok)} true & distinctive
+    (${S.C_named.claims} claims), D ${pct(S.D_named && S.D_named.ok)}.</div>` : ""}
+    <div class="small muted" style="margin-top:6px">A claim is a statement the parser can check (chord numerals, busier/thinner, higher/lower, reuse of a bar, new material,
+    melody rises/falls, same/new chord, ends on the home chord, same melody rhythm); every approach's text goes through the same parser. "Distinctive" = holds for at least
+    20 points more members than in the other groups. Category utility rewards groups whose members share facts; the silhouette uses B's rules distance
+    (it favours distance clusters). D's names are true by construction for the defining fact.</div>`;
+}
+scoreTable();
 
-// ------------------------------------------------------------------ section 2
-function groupCard(g, isNew) {
-  const claims = (g.claims || []).map(c => {
-    const good = isNew ? c.share >= 0.6 : c.category === "ok";
-    const cls = good ? "ok" : "bad";
-    const nice = t => { const [k, op, ...v] = t.split(" "); return `${FACT_NAMES[k] || k} ${op === "==" ? "=" : op === "!=" ? "≠" : "not one of"} ${v.join(" ")}`; };
-    const txt = isNew ? `${c.kind === "def" ? "defines" : "also"}: ${esc(nice(c.claim))}` : esc(c.claim);
-    return `<span class="chip ${cls}" title="${isNew ? "" : esc(c.category)}">${txt} · ${pct(c.share)}</span>`;
+// ---------------------------------------------------------------- section 2: explorer
+let P = X.prefixes[0], M = "A", focus = null, current = null;
+const sid = i => "#" + String(P.samples[i]).padStart(3, "0");
+const clipOf = i => `audio/x/${P.short}/s${String(P.samples[i]).padStart(3, "0")}.mp3`;
+$("psel").innerHTML = X.prefixes.map((p, i) => `<option value="${i}">${esc(short(p.id))} · ${esc(p.title || "")} (${p.split})</option>`).join("");
+$("mseg").innerHTML = CONDS.map(c => `<button data-m="${c}">${esc(P0.methods[c].label)}</button>`).join("");
+const player = {
+  ctx: null, cache: new Map(), live: [], timers: [], els: [],
+  buf(url) {
+    if (!this.cache.has(url)) this.cache.set(url, fetch(url).then(r => { if (!r.ok) throw new Error(url); return r.arrayBuffer(); }).then(b => this.ctx.decodeAudioData(b)));
+    return this.cache.get(url);
+  },
+  stop() { this.live.forEach(s => { try { s.stop(); } catch (e) {} }); this.live = []; this.timers.forEach(clearTimeout); this.timers = []; this.els.forEach(a => a.pause()); this.els = []; },
+  async play(urls, offsets) {
+    this.stop();
+    document.querySelectorAll("audio").forEach(a => a.pause());
+    try {
+      if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      await this.ctx.resume();
+      const bufs = await Promise.all(urls.map(u => this.buf(u)));
+      const t0 = this.ctx.currentTime + 0.05;
+      bufs.forEach((b, i) => { const s = this.ctx.createBufferSource(); s.buffer = b; s.connect(this.ctx.destination); s.start(t0 + offsets[i]); this.live.push(s); });
+      window.__accPlay = {urls, offsets, durations: bufs.map(b => b.duration)};
+    } catch (e) {
+      urls.forEach((u, i) => this.timers.push(setTimeout(() => { const a = new Audio(u); a.play(); this.els.push(a); }, 1000 * offsets[i])));
+    }
+  }
+};
+function playCand(i) {
+  current = i;
+  const lead = $("lead").checked;
+  player.play(lead ? [`audio/x/${P.short}/lastbar.mp3`, clipOf(i)] : [clipOf(i)], lead ? [0, P.lead_s] : [0]);
+  render();
+}
+function groupOf(c, i) { const m = P.methods[c], k = m.labels[i]; return k == null ? null : k < 0 ? "rare / not grouped" : m.groups[k].name; }
+function drawCross() {
+  if (current == null) { $("now").textContent = "Click a point or a sample to listen."; $("cross").innerHTML = ""; return; }
+  $("now").innerHTML = `▶ sample ${sid(current)}`;
+  $("cross").innerHTML = `<div class="muted small">This sample's group under each approach:</div>` + CONDS.map(c => { const k = P.methods[c].labels[current];
+    return `<div><b>${c}</b><span class="sw" style="background:${col(k)};width:9px;height:9px"></span><span>${esc(groupOf(c, current) || "excluded by the distance (no evidence)")}</span></div>`; }).join("");
+}
+function drawMap() {
+  const x = P.methods[M], pts = x.xy.map((p, i) => [p, i]).filter(([p]) => p);
+  const xs = pts.map(([p]) => p[0]), ys = pts.map(([p]) => p[1]);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const s = 440 / Math.max(x1 - x0, y1 - y0, 1e-9), ox = 250 - (x0 + x1) / 2 * s, oy = 250 - (y0 + y1) / 2 * s;
+  const meds = new Set(x.groups.map(g => g.medoid));
+  let h = "";
+  for (const [p, i] of pts) {
+    const k = x.labels[i], fade = focus != null && k !== focus;
+    h += `<circle data-i="${i}" cx="${(ox + p[0] * s).toFixed(1)}" cy="${(oy + p[1] * s).toFixed(1)}" r="${meds.has(i) ? 7 : 4.6}" fill="${col(k)}" `
+      + `fill-opacity="${fade ? 0.15 : 0.88}" stroke="${i === current || meds.has(i) ? "var(--ink)" : "var(--panel)"}" stroke-width="${i === current ? 3 : meds.has(i) ? 1.5 : 1}">`
+      + `<title>${esc(groupOf(M, i) || "")} · ${sid(i)}</title></circle>`;
+  }
+  $("map").innerHTML = h;
+}
+$("map").onclick = e => { const c = e.target.closest("circle"); if (c) playCand(Number(c.dataset.i)); };
+const open = new Set();
+function drawClusters() {
+  const x = P.methods[M];
+  const members = k => x.labels.map((l, i) => [l, i]).filter(([l]) => l === k).map(([, i]) => i);
+  const chip = (i, rep) => `<span class="m ${rep ? "rep" : ""} ${i === current ? "on" : ""}" data-i="${i}" title="${rep ? "representative" : ""}">${sid(i)}</span>`;
+  const LIM = 24;
+  let h = x.groups.map((g, k) => {
+    const mem = members(k), ordered = g.medoid != null ? [g.medoid, ...mem.filter(i => i !== g.medoid)] : mem;
+    const shown = open.has(k) ? ordered : ordered.slice(0, LIM);
+    const claims = g.claims.length ? g.claims.map(c => `<span class="cl ${CATCLS[c.cat]}" title="${esc(c.cat)}; other groups ${pct(c.sib)}">${esc(c.t)} · ${pct(c.share)}</span>`).join("")
+      : `<span class="small muted">no checkable claim</span>`;
+    return `<div class="card ${focus === k ? "sel" : ""}"><div class="ch" data-k="${k}"><span class="sw" style="background:${col(k)}"></span>`
+      + `<span class="name">${esc(g.name)}</span><span class="size">${g.size} · ${pct(g.share)}</span></div>`
+      + (g.description ? `<div class="desc">${esc(g.description)}</div>` : "")
+      + `<div class="row"><span class="lab">name claims</span>${claims}</div>`
+      + `<div class="row"><span class="lab">members actually</span>${g.facts.map(f => `<span class="fx">${esc(f.k)}: ${esc(f.v)} ${pct(f.share)}</span>`).join("")}</div>`
+      + `<div class="members">${shown.map((i, j) => chip(i, j === 0 && g.medoid != null)).join("")}${ordered.length > LIM ? `<button class="more" data-k="${k}">${open.has(k) ? "fewer" : `+${ordered.length - LIM} more`}</button>` : ""}</div></div>`;
   }).join("");
-  const extra = isNew ? `<span class="chip">stable in ${pct(g.stability)} of resamples</span>` : "";
-  return `<div class="card"><div class="t"><span class="name">${esc(g.name)}</span><span class="share">${pct(g.share)}</span></div>
-    <div class="d">${esc(g.description)}</div><div class="claim">${claims || '<span class="muted small">no checkable claim</span>'} ${extra}</div>
-    <div class="aud2">${g.clips.map((c, i) => aud(c)).join("")}</div><div class="small muted">${isNew ? "typical member" : "medoid"} · another member (last prefix bar + the new bar)</div></div>`;
+  const rare = members(-1), excl = x.labels.filter(l => l == null).length;
+  if (rare.length) h += `<div class="card"><div class="ch"><span class="sw" style="background:${col(-1)}"></span><span class="name">rare / not in a shown group</span>`
+    + `<span class="size">${rare.length} · ${pct(rare.length / P.n)}</span></div><div class="members">${rare.map(i => chip(i, false)).join("")}</div></div>`;
+  if (excl) h += `<div class="small muted">${excl} sample(s) are not on the map: the rules distance excluded them (too little evidence).</div>`;
+  $("clusters").innerHTML = h;
 }
-function showDev(i) {
-  const d = A.dev.prefixes[i];
-  document.querySelectorAll("#devsel button").forEach((b, j) => b.classList.toggle("on", j === i));
-  $("#devprefix").innerHTML = `<div class="box"><b>${short(d.prefix)}</b> · key: old <span class="${d.key_old === d.key_annotated ? "ok" : "bad"}">${d.key_old}</span> → new
-    <span class="${d.key_new === d.key_annotated ? "ok" : "bad"}">${d.key_new}</span>${d.key_new_signature_only ? " (signature only)" : ""} · POP909 annotation ${d.key_annotated} · ${d.n} samples${aud(d.prefix_clip)}<div class="small muted">the 4-bar prefix</div></div>`;
-  $("#oldg").innerHTML = d.old_groups.map(g => groupCard(g, false)).join("");
-  $("#newg").innerHTML = d.new_groups.map(g => groupCard(g, true)).join("");
+$("clusters").onclick = e => {
+  const mo = e.target.closest(".more"); if (mo) { const k = +mo.dataset.k; open.has(k) ? open.delete(k) : open.add(k); drawClusters(); return; }
+  const m = e.target.closest(".m"); if (m) { playCand(Number(m.dataset.i)); return; }
+  const c = e.target.closest(".ch"); if (c && c.dataset.k != null) { const k = Number(c.dataset.k); focus = focus === k ? null : k; render(); }
+};
+function render() {
+  document.querySelectorAll("#mseg button").forEach(b => b.classList.toggle("on", b.dataset.m === M));
+  const ok = (a, b) => a === b ? "ok" : "bad";
+  $("pinfo").innerHTML = `<b>${esc(short(P.id))}</b> ${esc(P.title || "")} · ${P.split} · ${P.n} samples · key: old <span class="${ok(P.key_old, P.key_annot)}">${esc(P.key_old)}</span>
+    → new <span class="${ok(P.key_new, P.key_annot)}">${esc(P.key_new)}</span>${P.key_sig_only ? " (signature only)" : ""} · POP909 annotation ${esc(P.key_annot)}
+    <span class="muted">(A uses the old key; B–D the new one)</span>`;
+  drawMap(); drawClusters(); drawCross();
+  $("mapnote").textContent = M === "A" ? "Map: classical MDS of A's rules distance." : "Map: classical MDS of B's rules distance (new readings + melody block); C and D use the same map so you can see how the fact groups cut it.";
 }
-$("#devsel").innerHTML = A.dev.prefixes.map((d, i) => `<button>${short(d.prefix)}</button>`).join("");
-document.querySelectorAll("#devsel button").forEach((b, i) => b.onclick = () => showDev(i));
-showDev(0);
+$("psel").onchange = () => { P = X.prefixes[Number($("psel").value)]; focus = null; current = null; open.clear(); player.stop(); render(); };
+$("mseg").onclick = e => { const m = e.target.dataset.m; if (m) { M = m; focus = null; open.clear(); render(); } };
+$("pfx").onclick = () => player.play([`audio/x/${P.short}/prefix.mp3`], [0]);
+$("stop").onclick = () => player.stop();
+render();
 
-// ------------------------------------------------------------------ section 3
+// ---------------------------------------------------------------- section 3: steering (accuracy_v1)
 const ORDER = ["label", "random", "largest", "free", "oracle", "old_oracle"];
-
+const FACT_NAMES = {chord: "opening chord", chord_rel: "chord vs before", ends_home: "ending", mel_repeat_type: "melody reuse", mel_contour: "melody contour",
+  mel_register: "melody register", mel_activity: "melody activity", acc_density: "accompaniment density"};
 (function () {
   const H = A.steer.summary.heldout || {}, n = (H.label || {}).n_prefixes || 0;
-  $("#steerintro").innerHTML = `For each of ${n} held-out prefixes (not used to design anything), the target is the <b>real next 4 bars</b> of the POP909 song,
-   described by the same facts but computed from the dataset's own chord labels and melody track. At every bar, 256 candidate bars are generated from the music chosen so far,
-   grouped and named, and one is committed. <b>Choosing by the new names</b> reads only the names a user would see and plays the group's typical member;
-   <b>random group</b> and <b>most common group</b> also play the typical member; <b>plain sampling</b> makes no choice. Two reference lines look inside the groups:
-   the <b>closest sample in the best group</b> (an upper bound: the closest reconstruction our pipeline can make) and the <b>best old group's medoid</b>
-   (as if a user could always pick the right old cluster).`;
-  const rows = ORDER.filter(c => H[c]).map(c => [c, H[c]]);
-  const lab = {oracle: "Closest sample in the best group (upper bound)", label: "Choosing by the new names", old_oracle: "Best old group's medoid", largest: "Always the most common group", random: "Random group", free: "No choice (plain sampling)"};
-  $("#steerchart").innerHTML = `<div class="small muted">Share of the target's facts matched, averaged over 4 bars and ${n} held-out prefixes</div><div class="bars">${rows.map(([c, r]) =>
-    `<div class="brow" data-t="${esc(lab[c])}: ${pct(r.fact_match)} of facts · opening chord matches ${pct(r.chord_match)} · sd ${pct(r.sd)} over prefixes"><div>${lab[c]}</div><div class="btrack"><div class="bfill ${c === "label" || c === "oracle" ? "hi" : ""}" style="width:${100 * r.fact_match}%"></div></div><div>${pct(r.fact_match)}</div></div>`).join("")}</div>`;
-  document.querySelectorAll("#steerchart .brow").forEach(d => hover(d, d.dataset.t));
-  const P = H.paired || {};
-  const ps = (k, t) => P[k] ? `${t}: ${P[k].wins} wins / ${P[k].losses} losses / ${P[k].ties} ties (sign test p = ${P[k].sign_test_p_two_sided})` : "";
+  $("steerintro").innerHTML = `Can a user who reads only the names steer AMT toward what they want? Target: the <b>real next 4 bars</b> of each of ${n} held-out POP909 songs,
+   described by the same facts but computed from the dataset's chord labels and melody track. At every bar, 256 candidates are generated from the music chosen so far,
+   grouped and named (approach D), and one is committed. <b>By name</b> reads only the names and plays the group's typical member; <b>random group</b> and
+   <b>most common group</b> also play the typical member; <b>plain sampling</b> makes no choice. Two references look inside the groups: the closest sample in the best group
+   (upper bound) and the best old group's medoid.`;
+  const lab = {oracle: "Closest sample in the best group (upper bound)", label: "Choosing by the names (D)", old_oracle: "Best old group's medoid", largest: "Always the most common group", random: "Random group", free: "No choice (plain sampling)"};
+  $("steerchart").innerHTML = `<div class="small muted">Share of the target's facts matched, averaged over 4 bars and ${n} held-out prefixes</div><div class="bars">${ORDER.filter(c => H[c]).map(c =>
+    `<div class="brow" title="opening chord matches ${pct(H[c].chord_match)}"><div>${lab[c]}</div><div class="btrack"><div class="bfill ${c === "label" ? "hi" : ""}" style="width:${100 * H[c].fact_match}%"></div></div><div>${pct(H[c].fact_match)}</div></div>`).join("")}</div>`;
+  const Pd = H.paired || {};
+  const ps = (k, t) => Pd[k] ? `${t}: ${Pd[k].wins} wins / ${Pd[k].losses} losses / ${Pd[k].ties} ties (sign test p = ${Pd[k].sign_test_p_two_sided})` : "";
   const G = H.best_group_member_match;
-  $("#steernote").innerHTML = [ps("label_vs_random", "By name vs random group"), ps("label_vs_largest", "by name vs most common"), ps("label_vs_free", "by name vs plain sampling")].filter(Boolean).join(" · ")
-    + (G ? `.<br><b>Groups themselves, fair comparison:</b> the average member of the best group matches ${pct(G.round1_same_samples.new)} of the target (new groups) vs
-       ${pct(G.round1_same_samples.old)} (old groups) on the same first-bar samples (new better in ${G.round1_same_samples.new_wins}, old in ${G.round1_same_samples.old_wins} of the prefixes).
-       So the groups capture the target about equally well; the gain comes from names that say what the group actually does.` : "")
-    + `<br>Facts: ${A.steer.match_keys.map(k => FACT_NAMES[k] || k).join(", ")}.`
-    + Object.entries(A.steer.robustness || {}).map(([k, r]) => r && r.label ? `<br>Robustness: the same experiment with the ${k === "skyline" ? "fallback top-voice melody rule" : "MidiBERT melody split"}
-       gives ${pct(r.label.fact_match)} by name vs ${pct(r.random.fact_match)} random, ${pct(r.largest.fact_match)} most common, ${pct(r.free.fact_match)} plain sampling.` : "").join("");
-  const sel = $("#steersel");
+  $("steernote").innerHTML = [ps("label_vs_random", "By name vs random group"), ps("label_vs_largest", "vs most common"), ps("label_vs_free", "vs plain sampling")].filter(Boolean).join(" · ")
+    + (G ? `.<br>Groups themselves: the average member of the best group matches ${pct(G.round1_same_samples.new)} (fact groups) vs ${pct(G.round1_same_samples.old)} (old clusters)
+       on the same samples, so the gain comes from names that say what the group does, not from better groups.` : "");
+  const sel = $("steersel");
   sel.innerHTML = A.steer.prefixes.map((p, i) => `<option value="${i}">${short(p.prefix)} (${p.split})</option>`).join("");
   sel.onchange = () => showSteer(+sel.value);
   showSteer(0);
 })();
 function showSteer(i) {
   const p = A.steer.prefixes[i];
-  $("#steerprefix").innerHTML = `<div class="box"><b>${short(p.prefix)}</b> (${p.split}) · key ${p.key}${p.key_signature_only ? " (signature only)" : ""}${aud(p.prefix_clip)}<div class="small muted">the 4-bar prefix; every clip below starts with its last bar</div></div>`;
+  $("steerprefix").innerHTML = `<div class="box"><b>${short(p.prefix)}</b> (${p.split}) · key ${p.key}${p.key_signature_only ? " (signature only)" : ""}${aud(p.prefix_clip)}<div class="small muted">the 4-bar prefix; every clip below starts with its last bar</div></div>`;
   const pl = [`<div class="pl truth"><div class="h">Real continuation (POP909)</div>${aud(p.gt.clip)}<div class="small muted">${p.gt.bars.map(b => (b.chord_names || []).join("–")).join(" | ")}</div></div>`];
   for (const c of ORDER) {
     const x = p.paths[c]; if (!x) continue;
-    pl.push(`<div class="pl ${c === "oracle" || c === "label" ? "ours" : ""}"><div class="h">${esc(x.label)}<span class="sc">${pct(x.mean)} match</span></div>${aud(x.clip)}
+    pl.push(`<div class="pl ${c === "label" ? "ours" : ""}"><div class="h">${esc(x.label)}<span class="sc">${pct(x.mean)} match</span></div>${aud(x.clip)}
       <div class="small muted">${x.rounds ? x.rounds.map((r, k) => `bar ${k + 1}: ${esc(r.name || "")}`).join("<br>") : "average over 32 plain samples; one is played"}</div></div>`);
   }
-  $("#steerplayers").innerHTML = pl.join("");
-  const keys = A.steer.match_keys;
-  let h = `<table><tr><th>Bar</th><th>Fact</th><th>Real song</th>${ORDER.filter(c => p.paths[c] && p.paths[c].rounds).map(c => `<th>${esc(p.paths[c].label)}</th>`).join("")}</tr>`;
-  for (let b = 0; b < 4; b++) {
-    keys.forEach((k, j) => {
-      const t = p.gt.bars[b][k];
-      h += `<tr>${j === 0 ? `<td rowspan="${keys.length}"><b>${b + 1}</b></td>` : ""}<td class="muted">${FACT_NAMES[k] || k}</td><td>${esc(t)}</td>${ORDER.filter(c => p.paths[c] && p.paths[c].rounds).map(c => {
-        const v = p.paths[c].rounds[b].facts[k]; const skip = t === "?" || t == null;
-        return `<td class="${skip ? "muted" : v === t ? "ok" : "bad"}">${esc(v)}</td>`; }).join("")}</tr>`;
-    });
-  }
-  $("#steertable").innerHTML = h + `</table><div class="small muted">Green = same as the real song; facts the real song leaves unclear are not scored.
-    Facts of the chosen bars are shown as computed during the run (bar by bar).</div>`;
+  $("steerplayers").innerHTML = pl.join("");
+  const keys = A.steer.match_keys, cs = ORDER.filter(c => p.paths[c] && p.paths[c].rounds);
+  let h = `<table><tr><th>Bar</th><th>Fact</th><th>Real song</th>${cs.map(c => `<th>${esc(p.paths[c].label)}</th>`).join("")}</tr>`;
+  for (let b = 0; b < 4; b++) keys.forEach((k, j) => {
+    const t = p.gt.bars[b][k];
+    h += `<tr>${j === 0 ? `<td rowspan="${keys.length}"><b>${b + 1}</b></td>` : ""}<td class="muted">${FACT_NAMES[k] || k}</td><td>${esc(t)}</td>${cs.map(c => {
+      const v = p.paths[c].rounds[b].facts[k]; const skip = t === "?" || t == null;
+      return `<td class="${skip ? "muted" : v === t ? "ok" : "bad"}">${esc(v)}</td>`; }).join("")}</tr>`;
+  });
+  $("steertable").innerHTML = h + `</table>`;
 }
 
-// ------------------------------------------------------------------ limitations
+// ---------------------------------------------------------------- section 4: readings
+(function () {
+  const kr = A.keys.prefixes, ok = b => b ? `<span class="ok">✓</span>` : `<span class="bad">✗</span>`;
+  $("keys").innerHTML = `<div class="small" style="margin-bottom:6px">Key (no training data): Temperley–Kostka–Payne profile on note onsets over all the music before the cutoff,
+   major vs relative minor by time spent on each tonic chord. Over ${K.ctx.n} held-out POP909 windows: old ${pct(K.old.exact)} exact (a fifth off ${pct(K.old.fifth)});
+   new, 16 beats only ${pct(K.win.exact)}; new, song so far ${pct(K.ctx.exact)}. Chords: triad + 7th templates per half bar, melody notes at half weight, bass from the
+   accompaniment: ${pct(C.old.majmin_correct)} → ${pct(C.new.majmin_correct)} correct. Melody vs accompaniment: MidiBERT-Piano (lead = melody + bridge), F1 0.83 vs 0.69 for the
+   top-note rule on MidiBERT's test songs.</div>
+   <table><tr><th>Prefix</th><th>Set</th><th>POP909 annotation</th><th>Old estimate</th><th>New estimate</th></tr>
+   ${kr.map(r => `<tr><td>${short(r.prefix)}</td><td class="muted">${r.split}</td><td>${r.annotated}</td><td>${ok(r.old_ok)} ${r.old}</td><td>${ok(r.new_ok)} ${r.new}${r.new_signature_only ? ' <span class="muted">(signature only)</span>' : ""}</td></tr>`).join("")}
+   <tr><th colspan="3">Correct</th><th>${kr.filter(r => r.old_ok).length} / ${kr.length}</th><th>${kr.filter(r => r.new_ok).length} / ${kr.length}</th></tr></table>`;
+})();
+
+// ---------------------------------------------------------------- limitations
 const lims = [
-  "No listening study yet. Matching facts is not the same as sounding right; the audio is here so you can judge.",
-  `Held-out test is small (${(A.steer.summary.heldout?.label || {}).n_prefixes || "?"} prefixes, one generated path per chooser) and all from POP909 (Chinese pop piano).`,
-  "The target facts come from POP909's chord labels and melody track, which are themselves machine-made.",
-  "The new names are true by construction for the defining fact; the real test of names is whether people pick the group they intend — the 'choosing by name' chooser here is a rule that reads the names, not a person.",
-  "Major vs relative minor remains the main key error (~13% of held-out windows); the labels then fall back to the key signature.",
-  `Melody/accompaniment split: ${A.melody_source === "midibert" ? "MidiBERT-Piano (trained on POP909; validated on its own test songs)" : "a fallback top-voice rule (≈60% precision on POP909); MidiBERT-Piano integration pending"}.`,
-  "Groups are defined harmony-first (opening chord) by design, because harmony carried almost all of the separation in earlier analyses; melody/texture facts then split or describe them.",
+  "No listening study. Claim checks and fact matches are symbolic; the audio is here so you can judge.",
+  "The claim parser only sees claims it can check (chords, busier/thinner, higher/lower, reuse of a bar, new material, contour, same/new chord, ending, same rhythm). Vaguer wording (\"gentle\", \"flowing\") is not scored, and every approach is scored by the same parser. Its patterns were corrected on A's and D's wording (e.g. \"lifts toward V\" is not a chord claim) and frozen before any B or C name was generated.",
+  "The parser also reads clauses about another group (\"unlike G1, which stays on I\") as claims about this group. A sensitivity check that drops such clauses gives the same ranking (dev: A 21%, B 61%, C 48%, D 100%; held-out: A 39%, B 57%, C 47%, D 100%).",
+  "\"Mix of IV and I\" is scored as two chord claims, so honest descriptions of mixed groups count as false; this hits A, B and C alike.",
+  "Truth is our own corrected reading of the samples (key, chords, MidiBERT melody), not human annotation; D is true by construction for its defining fact.",
+  "Small sets: 15 held-out prefixes (first bar only) and 106 pools from 3 dev songs, all POP909.",
+  "Qwen names were generated once (greedy decoding); B and C use the same prompt format as A, extended only with the new facts (melody vs accompaniment).",
+  "Steering (section 3) was run with approach D only; the chooser is a rule reading the names, not a person.",
 ];
-$("#lims").innerHTML = lims.map(l => `<li>${esc(l)}</li>`).join("");
-$("#method").innerHTML = `<p><b>Key</b>: Temperley–Kostka–Payne profile on onset counts over all notes before the cutoff; major vs relative minor by time on each tonic triad;
- confidence threshold ${A.keys.mode_conf_min} calibrated on odd-numbered POP909 songs only. <b>Chords</b>: triad + 7th templates per half bar with onset weighting and a bass-root bonus (tuned on odd-numbered songs).
- <b>Facts</b> per bar: opening chord, chord relative to earlier chords, ending on a home chord, melody reuse (exact / shifted / same rhythm), melody rhythm, activity, contour, register,
- accompaniment repetition and density. <b>Groups</b>: level 1 = opening chord values with ≥ 10% of samples (rest = "other"); level 2 = one more split chosen by category utility
- if it is stable in ≥ 60% of 30 bootstrap refits. <b>Names</b>: the definition through a fixed phrasebook + secondary facts (≥ 80% of members, ≥ 20 points above other groups).
- Code: <code>src/accuracy/</code>; data: <code>experiments/accuracy_v1/</code> in the research repository.</p>`;
+$("lims").innerHTML = lims.map(l => `<li>${esc(l)}</li>`).join("");
+$("method").innerHTML = `<p><b>B's distance</b> is the previous rules distance (rules_v6) block for block; only its inputs change (new key; new chords with the melody at half weight
+ and the bass from the accompaniment) and one block is added: melody rhythm, repetition, register, contour and activity relative to the 4 bars before (weight 1, like the
+ other main blocks). Same agglomerative clustering and the same rule for choosing the number of groups. <b>C/D groups</b>: level 1 = opening chord values with ≥ 10% of
+ samples (the rest is "other"); level 2 = one more split by category utility if stable in ≥ 60% of 30 bootstrap refits. <b>Qwen prompt</b>: dtree_names/v4 for A;
+ for B and C the same task text with the new key, new chords and the per-group table of the new facts (melody / accompaniment) and the same "what separates the groups" lines
+ (from B's distance). Code: <code>src/accuracy/ablation.py</code>, <code>src/accuracy/naming_v2.py</code>; results: <code>experiments/accuracy_v2/ablation.json</code>.</p>`;
 </script>
 </body>
 </html>
