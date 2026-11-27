@@ -93,18 +93,7 @@ code{font-size:12px}
   <h1>Grouping and naming continuations: what changed, and which change matters</h1>
   <div class="sub" id="intro"></div>
 </header>
-<div class="tiles" id="tiles"></div>
-
-<h2>1 · Four ways to group and name the same continuations</h2>
-<div class="sub">Each step changes one thing. <b>A → B</b>: only the reading of the music (key, chords, melody vs accompaniment) changes; the clustering
-method and the Qwen prompt stay the same. <b>B → C</b>: only the grouping changes (distance clusters → groups defined by musical facts), with the same Qwen prompt.
-<b>C → D</b>: only the naming changes (Qwen → names written from each group's definition). Every claim a name or description makes (a chord, "busier", "higher",
-"reuses P3", "melody rises", …) is checked against every member of the group, using the corrected readings.</div>
-<div class="box scroll" id="condtable"></div>
-<div style="margin:6px 0"><span class="seg" id="setseg"></span></div>
-<div class="box scroll" id="scoretable"></div>
-
-<h2>2 · Listen and compare</h2>
+<h2>1 · Listen and compare</h2>
 <div class="sub">One prefix at a time: its 256 one-bar continuations from AMT, grouped and named by each approach. Click a point or a sample to hear the last
 prefix bar followed by that continuation. The panel under the map shows the group of the selected sample under every approach. Claim chips: <span class="cl ok">true</span>
 for ≥ 60% of the group and ≥ 20 points more than in the other groups · <span class="cl warn">true but not distinctive</span> · <span class="cl bad">false for most members</span>;
@@ -124,7 +113,7 @@ the percentage is the share of members for which the claim holds. Grey chips sho
 </div>
 <div class="small muted" id="mapnote"></div>
 
-<h2>3 · Steering toward the real song (approach D)</h2>
+<h2>2 · Steering toward the real song (approach D)</h2>
 <div class="sub" id="steerintro"></div>
 <div class="box"><div id="steerchart"></div><div class="small muted" id="steernote"></div></div>
 <div style="margin:10px 0"><select id="steersel"></select></div>
@@ -132,19 +121,12 @@ the percentage is the share of members for which the claim holds. Grey chips sho
 <div class="grid3" id="steerplayers"></div>
 <details><summary>Bar by bar: what the real song does vs what each pick does</summary><div class="box scroll" id="steertable"></div></details>
 
-<h2>4 · Reading the music</h2>
-<div class="box scroll" id="keys"></div>
-
-<h2>5 · Limitations</h2>
-<ul class="lim" id="lims"></ul>
-<details><summary>Method details</summary><div class="small" id="method"></div></details>
 </div>
 <script src="data/acc.js"></script>
 <script>
 "use strict";
 const A = window.ACC, X = A.explorer, $ = id => document.getElementById(id);
 const pct = x => x == null ? "–" : Math.round(100 * x) + "%";
-const f2 = x => x == null ? "–" : x.toFixed(2);
 const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
 const short = p => p.replace("pop909-", "").replace(/-win.*/, "");
 const PAL = ["#4e79a7", "#f28e2b", "#59a14f", "#e15759", "#b07aa1", "#76b7b2", "#edc948", "#9c755f"];
@@ -155,56 +137,14 @@ const CATCLS = {"ok": "ok", "not distinctive": "warn", "false for most members":
 document.addEventListener("play", e => { document.querySelectorAll("audio").forEach(a => { if (a !== e.target) a.pause(); }); }, true);
 const aud = src => `<audio controls preload="none" src="${src}"></audio>`;
 
-// ---------------------------------------------------------------- intro + tiles
-const K = A.keys.validation, C = A.keys.chords, MV = A.melody_validation;
-const SUM = X.summary;
+// ---------------------------------------------------------------- intro
 $("intro").innerHTML = `The rules pipeline groups AMT's candidate continuations and names each group so a musician can choose a direction.
 This page compares the previous pipeline (A) with three changes applied one at a time (B, C, D) on the <b>same samples</b>, and lets you listen to every sample.
 Generator: AMT music-medium-800k, top-p 0.98. Namer: Qwen3-32B. Built ${A.created_at.slice(0, 16).replace("T", " ")} UTC.
 No listening data has been collected; the checks are symbolic.`;
-const H = SUM.heldout || {}, Dv = SUM.dev || {};
-const mf = MV && (MV.lead || MV.summary || null);
-const tiles = [
-  ["Key correct (held-out POP909 songs)", pct(K.ctx.exact), pct(K.old.exact), `key signature ${pct(K.old.key_signature)} → ${pct(K.ctx.key_signature)} · ${K.ctx.n} windows`],
-  ["Chord correct (held-out half-bars)", pct(C.new.majmin_correct), pct(C.old.majmin_correct), `unclear ${pct(C.old.majmin_unclear)} → ${pct(C.new.majmin_unclear)}`],
-  ["Name claims true & distinctive, held-out (A → B → C → D)", pct(H.D && H.D.ok), pct(H.A && H.A.ok),
-   `A ${pct(H.A && H.A.ok)} · B ${pct(H.B && H.B.ok)} · C ${pct(H.C && H.C.ok)} · D ${pct(H.D && H.D.ok)} (${(H.A || {}).pools || 0} prefixes)`],
-  ["Same, 106 dev pools (3 decision trees)", pct(Dv.D && Dv.D.ok), pct(Dv.A && Dv.A.ok),
-   `A ${pct(Dv.A && Dv.A.ok)} · B ${pct(Dv.B && Dv.B.ok)} · C ${pct(Dv.C && Dv.C.ok)} · D ${pct(Dv.D && Dv.D.ok)}`],
-];
-$("tiles").innerHTML = tiles.map(([l, n, o, note]) => `<div class="tile"><div class="lab">${l}</div><div class="big">${o ? `<span class="from">${o} →</span> ` : ""}${n}</div><div class="note">${note}</div></div>`).join("");
-
-// ---------------------------------------------------------------- section 1
+// ---------------------------------------------------------------- explorer
 const P0 = X.prefixes[0];
-$("condtable").innerHTML = `<table><tr><th></th><th>Reading of the music</th><th>Grouping</th><th>Naming</th></tr>${CONDS.map(c => { const m = P0.methods[c];
-  return `<tr><td><b>${esc(m.label)}</b></td><td>${m.features === "old" ? "old: key from 16 beats (KK), triad chords, no melody split" : "new: key from the song so far, triad + 7th chords, MidiBERT melody split"}</td>
-  <td>${m.grouping === "fact tree" ? "groups defined by facts (opening chord, then one stable split)" : "rules-distance clusters" + (m.features === "new" ? " (same method; new key/chords + a melody block)" : "")}</td>
-  <td>${m.naming === "template" ? "written from the group's definition + facts true for ≥ 80% of members" : "Qwen3-32B, same prompt format, shown the group's facts"}</td></tr>`; }).join("")}</table>`;
-let SET = "heldout";
-const SETS = {heldout: "Held-out (15 prefixes, first bar)", dev: "Dev (106 pools of the 3 decision trees)", page_all: "All 18 prefixes on this page"};
-$("setseg").innerHTML = Object.entries(SETS).filter(([k]) => SUM[k]).map(([k, t]) => `<button data-s="${k}">${t}</button>`).join("");
-$("setseg").onclick = e => { const s = e.target.dataset.s; if (s) { SET = s; scoreTable(); } };
-function scoreTable() {
-  document.querySelectorAll("#setseg button").forEach(b => b.classList.toggle("on", b.dataset.s === SET));
-  const S = SUM[SET] || {};
-  const cols = [["Claims true & distinctive", r => pct(r.ok), true], ["True but not distinctive", r => pct(r["not distinctive"])],
-    ["False for most members", r => pct(r["false for most members"])], ["Avg share of members a claim holds for", r => pct(r.mean_member_share)],
-    ["Checkable claims", r => r.claims], ["Claims per group", r => f2(r.claims_per_group)], ["Groups per pool", r => f2(r.k)],
-    ["Samples in a named group", r => pct(r.assigned)], ["Category utility (facts)", r => f2(r.cu)], ["Silhouette (B distance)", r => f2(r.silhouette_B)]];
-  $("scoretable").innerHTML = `<table><tr><th></th>${cols.map(([t]) => `<th class="num">${t}</th>`).join("")}</tr>${CONDS.filter(c => S[c]).map(c =>
-    `<tr><td><b>${esc(P0.methods[c].label)}</b></td>${cols.map(([, f, hi]) => `<td class="num">${hi ? "<b>" + f(S[c]) + "</b>" : f(S[c])}</td>`).join("")}</tr>`).join("")}</table>
-    ${(X.paired || {})[SET] ? `<div class="small" style="margin-top:6px">Paired over pools (share of claims true & distinctive; sign test): ${Object.entries(X.paired[SET]).map(([k, v]) =>
-      `${k.replace("->", " → ")}: better in ${v.better}, worse in ${v.worse}, tied ${v.ties} (p = ${v.p < 0.001 ? v.p.toExponential(0) : v.p})`).join(" · ")}.</div>` : ""}
-    ${S.C_named ? `<div class="small" style="margin-top:6px">Without the heterogeneous "Other" group of the fact tree: C ${pct(S.C_named.ok)} true & distinctive
-    (${S.C_named.claims} claims), D ${pct(S.D_named && S.D_named.ok)}.</div>` : ""}
-    <div class="small muted" style="margin-top:6px">A claim is a statement the parser can check (chord numerals, busier/thinner, higher/lower, reuse of a bar, new material,
-    melody rises/falls, same/new chord, ends on the home chord, same melody rhythm); every approach's text goes through the same parser. "Distinctive" = holds for at least
-    20 points more members than in the other groups. Category utility rewards groups whose members share facts; the silhouette uses B's rules distance
-    (it favours distance clusters). D's names are true by construction for the defining fact.</div>`;
-}
-scoreTable();
 
-// ---------------------------------------------------------------- section 2: explorer
 let P = X.prefixes[0], M = "A", focus = null, current = null;
 const sid = i => "#" + String(P.samples[i]).padStart(3, "0");
 const clipOf = i => `audio/x/${P.short}/s${String(P.samples[i]).padStart(3, "0")}.mp3`;
@@ -305,7 +245,7 @@ $("pfx").onclick = () => player.play([`audio/x/${P.short}/prefix.mp3`], [0]);
 $("stop").onclick = () => player.stop();
 render();
 
-// ---------------------------------------------------------------- section 3: steering (accuracy_v1)
+// ---------------------------------------------------------------- steering (accuracy_v1)
 const ORDER = ["label", "random", "largest", "free", "oracle", "old_oracle"];
 const FACT_NAMES = {chord: "opening chord", chord_rel: "chord vs before", ends_home: "ending", mel_repeat_type: "melody reuse", mel_contour: "melody contour",
   mel_register: "melody register", mel_activity: "melody activity", acc_density: "accompaniment density"};
@@ -351,37 +291,6 @@ function showSteer(i) {
   $("steertable").innerHTML = h + `</table>`;
 }
 
-// ---------------------------------------------------------------- section 4: readings
-(function () {
-  const kr = A.keys.prefixes, ok = b => b ? `<span class="ok">✓</span>` : `<span class="bad">✗</span>`;
-  $("keys").innerHTML = `<div class="small" style="margin-bottom:6px">Key (no training data): Temperley–Kostka–Payne profile on note onsets over all the music before the cutoff,
-   major vs relative minor by time spent on each tonic chord. Over ${K.ctx.n} held-out POP909 windows: old ${pct(K.old.exact)} exact (a fifth off ${pct(K.old.fifth)});
-   new, 16 beats only ${pct(K.win.exact)}; new, song so far ${pct(K.ctx.exact)}. Chords: triad + 7th templates per half bar, melody notes at half weight, bass from the
-   accompaniment: ${pct(C.old.majmin_correct)} → ${pct(C.new.majmin_correct)} correct. Melody vs accompaniment: MidiBERT-Piano (lead = melody + bridge), F1 0.83 vs 0.69 for the
-   top-note rule on MidiBERT's test songs.</div>
-   <table><tr><th>Prefix</th><th>Set</th><th>POP909 annotation</th><th>Old estimate</th><th>New estimate</th></tr>
-   ${kr.map(r => `<tr><td>${short(r.prefix)}</td><td class="muted">${r.split}</td><td>${r.annotated}</td><td>${ok(r.old_ok)} ${r.old}</td><td>${ok(r.new_ok)} ${r.new}${r.new_signature_only ? ' <span class="muted">(signature only)</span>' : ""}</td></tr>`).join("")}
-   <tr><th colspan="3">Correct</th><th>${kr.filter(r => r.old_ok).length} / ${kr.length}</th><th>${kr.filter(r => r.new_ok).length} / ${kr.length}</th></tr></table>`;
-})();
-
-// ---------------------------------------------------------------- limitations
-const lims = [
-  "No listening study. Claim checks and fact matches are symbolic; the audio is here so you can judge.",
-  "The claim parser only sees claims it can check (chords, busier/thinner, higher/lower, reuse of a bar, new material, contour, same/new chord, ending, same rhythm). Vaguer wording (\"gentle\", \"flowing\") is not scored, and every approach is scored by the same parser. Its patterns were corrected on A's and D's wording (e.g. \"lifts toward V\" is not a chord claim) and frozen before any B or C name was generated.",
-  "The parser also reads clauses about another group (\"unlike G1, which stays on I\") as claims about this group. A sensitivity check that drops such clauses gives the same ranking (dev: A 21%, B 61%, C 48%, D 100%; held-out: A 39%, B 57%, C 47%, D 100%).",
-  "\"Mix of IV and I\" is scored as two chord claims, so honest descriptions of mixed groups count as false; this hits A, B and C alike.",
-  "Truth is our own corrected reading of the samples (key, chords, MidiBERT melody), not human annotation; D is true by construction for its defining fact.",
-  "Small sets: 15 held-out prefixes (first bar only) and 106 pools from 3 dev songs, all POP909.",
-  "Qwen names were generated once (greedy decoding); B and C use the same prompt format as A, extended only with the new facts (melody vs accompaniment).",
-  "Steering (section 3) was run with approach D only; the chooser is a rule reading the names, not a person.",
-];
-$("lims").innerHTML = lims.map(l => `<li>${esc(l)}</li>`).join("");
-$("method").innerHTML = `<p><b>B's distance</b> is the previous rules distance (rules_v6) block for block; only its inputs change (new key; new chords with the melody at half weight
- and the bass from the accompaniment) and one block is added: melody rhythm, repetition, register, contour and activity relative to the 4 bars before (weight 1, like the
- other main blocks). Same agglomerative clustering and the same rule for choosing the number of groups. <b>C/D groups</b>: level 1 = opening chord values with ≥ 10% of
- samples (the rest is "other"); level 2 = one more split by category utility if stable in ≥ 60% of 30 bootstrap refits. <b>Qwen prompt</b>: dtree_names/v4 for A;
- for B and C the same task text with the new key, new chords and the per-group table of the new facts (melody / accompaniment) and the same "what separates the groups" lines
- (from B's distance). Code: <code>src/accuracy/ablation.py</code>, <code>src/accuracy/naming_v2.py</code>; results: <code>experiments/accuracy_v2/ablation.json</code>.</p>`;
 </script>
 </body>
 </html>
