@@ -80,6 +80,7 @@ audio{width:100%;height:32px;margin-top:6px}
 .btrack{height:14px;background:var(--chip);border-radius:4px;position:relative}
 .bfill{position:absolute;left:0;top:0;bottom:0;background:var(--accent2);border-radius:0 4px 4px 0}
 .bfill.hi{background:var(--accent)}
+.legend2 ul{margin:4px 0 0;padding-left:18px}.legend2 li{margin:2px 0}
 details{margin:8px 0}
 summary{cursor:pointer;color:var(--accent)}
 ul.lim li{margin:4px 0}
@@ -95,9 +96,18 @@ code{font-size:12px}
 </header>
 <h2>1 · Listen and compare</h2>
 <div class="sub">One prefix at a time: its 256 one-bar continuations from AMT, grouped and named by each approach. Click a point or a sample to hear the last
-prefix bar followed by that continuation. The panel under the map shows the group of the selected sample under every approach. Claim chips: <span class="cl ok">true</span>
-for ≥ 60% of the group and ≥ 20 points more than in the other groups · <span class="cl warn">true but not distinctive</span> · <span class="cl bad">false for most members</span>;
-the percentage is the share of members for which the claim holds. Grey chips show what the members actually do.</div>
+prefix bar followed by that continuation; click it again to stop. The panel under the map shows the group of the selected sample under every approach.</div>
+<div class="box small legend2"><b>How to read a group card</b>
+<ul>
+<li><b>Name claims</b>: each checkable statement in the group's name and description (for example "opening chord IV" or "reuses P4"), checked against every sample
+in the group. The percentage is how many of the group's samples it is true for.
+<ul>
+<li><span class="cl ok">green</span> true for most of the group (at least 60% of its samples) <i>and</i> it sets the group apart: at least 20 percentage points more common than in the other groups.</li>
+<li><span class="cl warn">amber</span> true for most of the group, but about as common in the other groups, so it does not help you tell the groups apart.</li>
+<li><span class="cl bad">red</span> false for most of the group (true for less than 60% of its samples).</li>
+</ul></li>
+<li><b>Members actually</b> (grey): what the group's samples most often do: opening chord, melody, accompaniment.</li>
+</ul></div>
 <div class="controls">
   <select id="psel"></select>
   <span class="seg" id="mseg"></span>
@@ -153,23 +163,37 @@ const player = {
     if (!this.cache.has(url)) this.cache.set(url, fetch(url).then(r => { if (!r.ok) throw new Error(url); return r.arrayBuffer(); }).then(b => this.ctx.decodeAudioData(b)));
     return this.cache.get(url);
   },
-  stop() { this.live.forEach(s => { try { s.stop(); } catch (e) {} }); this.live = []; this.timers.forEach(clearTimeout); this.timers = []; this.els.forEach(a => a.pause()); this.els = []; },
+  playing: false, token: 0, onchange: () => {},
+  stop() {
+    this.token++; this.live.forEach(s => { try { s.stop(); } catch (e) {} }); this.live = []; this.timers.forEach(clearTimeout); this.timers = [];
+    this.els.forEach(a => a.pause()); this.els = [];
+    if (this.playing) { this.playing = false; this.onchange(); }
+  },
   async play(urls, offsets) {
     this.stop();
+    const tok = this.token;
+    this.playing = true; this.onchange();
     document.querySelectorAll("audio").forEach(a => a.pause());
+    const done = ms => this.timers.push(setTimeout(() => { if (tok === this.token) { this.playing = false; this.live = []; this.onchange(); } }, ms));
     try {
       if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
       await this.ctx.resume();
       const bufs = await Promise.all(urls.map(u => this.buf(u)));
+      if (tok !== this.token) return;   // stopped while loading
       const t0 = this.ctx.currentTime + 0.05;
       bufs.forEach((b, i) => { const s = this.ctx.createBufferSource(); s.buffer = b; s.connect(this.ctx.destination); s.start(t0 + offsets[i]); this.live.push(s); });
+      done(1000 * (0.05 + Math.max(...bufs.map((b, i) => offsets[i] + b.duration))));
       window.__accPlay = {urls, offsets, durations: bufs.map(b => b.duration)};
     } catch (e) {
+      if (tok !== this.token) return;
       urls.forEach((u, i) => this.timers.push(setTimeout(() => { const a = new Audio(u); a.play(); this.els.push(a); }, 1000 * offsets[i])));
+      done(1000 * (Math.max(...offsets) + 5));
     }
   }
 };
+player.onchange = () => drawCross();
 function playCand(i) {
+  if (current === i && player.playing) { player.stop(); return; }   // second click on the playing sample stops it
   current = i;
   const lead = $("lead").checked;
   player.play(lead ? [`audio/x/${P.short}/lastbar.mp3`, clipOf(i)] : [clipOf(i)], lead ? [0, P.lead_s] : [0]);
@@ -178,7 +202,7 @@ function playCand(i) {
 function groupOf(c, i) { const m = P.methods[c], k = m.labels[i]; return k == null ? null : k < 0 ? "rare / not grouped" : m.groups[k].name; }
 function drawCross() {
   if (current == null) { $("now").textContent = "Click a point or a sample to listen."; $("cross").innerHTML = ""; return; }
-  $("now").innerHTML = `▶ sample ${sid(current)}`;
+  $("now").innerHTML = player.playing ? `▶ playing sample ${sid(current)} (click it again to stop)` : `■ sample ${sid(current)} (click to play)`;
   $("cross").innerHTML = `<div class="muted small">This sample's group under each approach:</div>` + CONDS.map(c => { const k = P.methods[c].labels[current];
     return `<div><b>${c}</b><span class="sw" style="background:${col(k)};width:9px;height:9px"></span><span>${esc(groupOf(c, current) || "excluded by the distance (no evidence)")}</span></div>`; }).join("");
 }
@@ -207,7 +231,7 @@ function drawClusters() {
   let h = x.groups.map((g, k) => {
     const mem = members(k), ordered = g.medoid != null ? [g.medoid, ...mem.filter(i => i !== g.medoid)] : mem;
     const shown = open.has(k) ? ordered : ordered.slice(0, LIM);
-    const claims = g.claims.length ? g.claims.map(c => `<span class="cl ${CATCLS[c.cat]}" title="${esc(c.cat)}; other groups ${pct(c.sib)}">${esc(c.t)} · ${pct(c.share)}</span>`).join("")
+    const claims = g.claims.length ? g.claims.map(c => `<span class="cl ${CATCLS[c.cat]}" title="true for ${pct(c.share)} of this group and ${pct(c.sib)} of the other groups">${esc(c.t)} · ${pct(c.share)}</span>`).join("")
       : `<span class="small muted">no checkable claim</span>`;
     return `<div class="card ${focus === k ? "sel" : ""}"><div class="ch" data-k="${k}"><span class="sw" style="background:${col(k)}"></span>`
       + `<span class="name">${esc(g.name)}</span><span class="size">${g.size} · ${pct(g.share)}</span></div>`
