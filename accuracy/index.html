@@ -155,7 +155,7 @@ const P0 = X.prefixes[0];
 let P = X.prefixes[0], M = "A", focus = null, current = null;
 const sid = i => "#" + String(P.samples[i]).padStart(3, "0");
 const clipOf = i => `audio/x/${P.short}/s${String(P.samples[i]).padStart(3, "0")}.mp3`;
-$("psel").innerHTML = X.prefixes.map((p, i) => `<option value="${i}">${esc(short(p.id))} · ${esc(p.title || "")} (${p.split})</option>`).join("");
+$("psel").innerHTML = X.prefixes.map((p, i) => `<option value="${i}">${esc(short(p.id))} · ${esc(p.title || "")}</option>`).join("");
 $("mseg").innerHTML = CONDS.map(c => `<button data-m="${c}">${esc(P0.methods[c].label)}</button>`).join("");
 const player = {
   ctx: null, cache: new Map(), live: [], timers: [], els: [],
@@ -283,13 +283,13 @@ const FACT_NAMES = {chord: "opening chord", chord_rel: "chord vs before", ends_h
     + (G ? `.<br>Groups themselves: the average member of the best group matches ${pct(G.round1_same_samples.new)} (fact groups) vs ${pct(G.round1_same_samples.old)} (old clusters)
        on the same samples, so the gain comes from names that say what the group does, not from better groups.` : "");
   const sel = $("steersel");
-  sel.innerHTML = A.steer.prefixes.map((p, i) => `<option value="${i}">${short(p.prefix)} (${p.split})</option>`).join("");
+  sel.innerHTML = A.steer.prefixes.map((p, i) => `<option value="${i}">${short(p.prefix)}</option>`).join("");
   sel.onchange = () => showSteer(+sel.value);
   showSteer(0);
 })();
 function showSteer(i) {
   const p = A.steer.prefixes[i];
-  $("steerprefix").innerHTML = `<div class="box"><b>${short(p.prefix)}</b> (${p.split}) · key ${p.key}${p.key_signature_only ? " (signature only)" : ""}${aud(p.prefix_clip)}<div class="small muted">the 4-bar prefix; every clip below starts with its last bar</div></div>`;
+  $("steerprefix").innerHTML = `<div class="box"><b>${short(p.prefix)}</b> · key ${p.key}${p.key_signature_only ? " (signature only)" : ""}${aud(p.prefix_clip)}<div class="small muted">the 4-bar prefix; every clip below starts with its last bar</div></div>`;
   const pl = [`<div class="pl truth"><div class="h">Real continuation (POP909)</div>${aud(p.gt.clip)}<div class="small muted">${p.gt.bars.map(b => (b.chord_names || []).join("–")).join(" | ")}</div></div>`];
   for (const c of ORDER) {
     const x = p.paths[c]; if (!x) continue;
