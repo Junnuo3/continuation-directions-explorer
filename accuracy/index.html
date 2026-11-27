@@ -81,6 +81,16 @@ audio{width:100%;height:32px;margin-top:6px}
 .bfill{position:absolute;left:0;top:0;bottom:0;background:var(--accent2);border-radius:0 4px 4px 0}
 .bfill.hi{background:var(--accent)}
 .legend2 ul{margin:4px 0 0;padding-left:18px}.legend2 li{margin:2px 0}
+.roll{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:8px 10px;margin:10px 0}
+.roll .rh{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline}
+.roll .rh .nm{font-weight:620}
+.roll .rh .sc{margin-left:auto;font-size:12.5px;color:var(--muted)}
+.rollsvg{overflow-x:auto}
+.rollsvg svg{display:block;max-width:none}
+.gtn{fill:var(--ink);opacity:.2}
+.mel{fill:#d6409f}.acc{fill:#4f9d69}.pre{fill:var(--muted);opacity:.75}
+.barlab{font-size:11px;fill:var(--ink)}.barsc{font-size:10.5px;fill:var(--muted)}.axl{font-size:10px;fill:var(--muted)}
+.sw2{display:inline-block;width:18px;height:8px;border-radius:2px;vertical-align:middle;margin:0 4px 0 10px}
 details{margin:8px 0}
 summary{cursor:pointer;color:var(--accent)}
 ul.lim li{margin:4px 0}
@@ -94,6 +104,7 @@ code{font-size:12px}
   <h1>Four ways to group and name the same continuations</h1>
   <div class="sub" id="intro"></div>
 </header>
+<section id="sec1">
 <h2>1 · Listen and compare</h2>
 <div class="sub">One prefix at a time: its 256 one-bar continuations from AMT, grouped and named by each approach. Click a point or a sample to hear the last
 prefix bar followed by that continuation; click it again to stop. The panel under the map shows the group of the selected sample under every approach.</div>
@@ -121,14 +132,20 @@ in the group. The percentage is how many of the group's samples it is true for.
   <div id="clusters"></div>
 </div>
 <div class="small muted" id="mapnote"></div>
+</section>
 
-<h2>2 · Steering toward the real song (approach D)</h2>
-<div class="sub" id="steerintro"></div>
-<div class="box"><div id="steerchart"></div><div class="small muted" id="steernote"></div></div>
-<div style="margin:10px 0"><select id="steersel"></select></div>
-<div id="steerprefix"></div>
-<div class="grid3" id="steerplayers"></div>
-<details><summary>Bar by bar: what the real song does vs what each pick does</summary><div class="box scroll" id="steertable"></div></details>
+<h2>2 · Steering toward the real song</h2>
+<div class="sub" id="s4intro"></div>
+<div class="box scroll" id="s4table"></div>
+<div class="controls" style="position:static">
+  <select id="s4sel"></select>
+  <span class="seg" id="s4bars"></span>
+  <label><input type="checkbox" id="s4gt" checked> show the real continuation behind each roll</label>
+  <button class="b" id="s4truth">▶ real continuation</button>
+  <button class="b" id="s4stop">■ stop</button>
+</div>
+<div class="small muted" id="s4legend" style="margin:6px 0"></div>
+<div id="s4rolls"></div>
 
 </div>
 <script src="data/acc.js"></script>
@@ -262,52 +279,91 @@ $("pfx").onclick = () => player.play([`audio/x/${P.short}/prefix.mp3`], [0]);
 $("stop").onclick = () => player.stop();
 render();
 
-// ---------------------------------------------------------------- steering (accuracy_v1)
-const ORDER = ["label", "random", "largest", "free", "oracle", "old_oracle"];
-const FACT_NAMES = {chord: "opening chord", chord_rel: "chord vs before", ends_home: "ending", mel_repeat_type: "melody reuse", mel_contour: "melody contour",
-  mel_register: "melody register", mel_activity: "melody activity", acc_density: "accompaniment density"};
-(function () {
-  const H = A.steer.summary.heldout || {}, n = (H.label || {}).n_prefixes || 0;
-  $("steerintro").innerHTML = `Can a user who reads only the names steer AMT toward what they want? Target: the <b>real next 4 bars</b> of each of ${n} held-out POP909 songs,
-   described by the same facts but computed from the dataset's chord labels and melody track. At every bar, 256 candidates are generated from the music chosen so far,
-   grouped and named (approach D), and one is committed. <b>By name</b> reads only the names and plays the group's typical member; <b>random group</b> and
-   <b>most common group</b> also play the typical member; <b>plain sampling</b> makes no choice. Two references look inside the groups: the closest sample in the best group
-   (upper bound) and the best old group's medoid.`;
-  const lab = {oracle: "Closest sample in the best group (upper bound)", label: "Choosing by the names (D)", old_oracle: "Best old group's medoid", largest: "Always the most common group", random: "Random group", free: "No choice (plain sampling)"};
-  $("steerchart").innerHTML = `<div class="small muted">Share of the target's facts matched, averaged over 4 bars and ${n} held-out prefixes</div><div class="bars">${ORDER.filter(c => H[c]).map(c =>
-    `<div class="brow" title="opening chord matches ${pct(H[c].chord_match)}"><div>${lab[c]}</div><div class="btrack"><div class="bfill ${c === "label" ? "hi" : ""}" style="width:${100 * H[c].fact_match}%"></div></div><div>${pct(H[c].fact_match)}</div></div>`).join("")}</div>`;
-  const Pd = H.paired || {};
-  const ps = (k, t) => Pd[k] ? `${t}: ${Pd[k].wins} wins / ${Pd[k].losses} losses / ${Pd[k].ties} ties (sign test p = ${Pd[k].sign_test_p_two_sided})` : "";
-  const G = H.best_group_member_match;
-  $("steernote").innerHTML = [ps("label_vs_random", "By name vs random group"), ps("label_vs_largest", "vs most common"), ps("label_vs_free", "vs plain sampling")].filter(Boolean).join(" · ")
-    + (G ? `.<br>Groups themselves: the average member of the best group matches ${pct(G.round1_same_samples.new)} (fact groups) vs ${pct(G.round1_same_samples.old)} (old clusters)
-       on the same samples, so the gain comes from names that say what the group does, not from better groups.` : "");
-  const sel = $("steersel");
-  sel.innerHTML = A.steer.prefixes.map((p, i) => `<option value="${i}">${short(p.prefix)}</option>`).join("");
-  sel.onchange = () => showSteer(+sel.value);
-  showSteer(0);
-})();
-function showSteer(i) {
-  const p = A.steer.prefixes[i];
-  $("steerprefix").innerHTML = `<div class="box"><b>${short(p.prefix)}</b> · key ${p.key}${p.key_signature_only ? " (signature only)" : ""}${aud(p.prefix_clip)}<div class="small muted">the 4-bar prefix; every clip below starts with its last bar</div></div>`;
-  const pl = [`<div class="pl truth"><div class="h">Real continuation (POP909)</div>${aud(p.gt.clip)}<div class="small muted">${p.gt.bars.map(b => (b.chord_names || []).join("–")).join(" | ")}</div></div>`];
-  for (const c of ORDER) {
-    const x = p.paths[c]; if (!x) continue;
-    pl.push(`<div class="pl ${c === "label" ? "ours" : ""}"><div class="h">${esc(x.label)}<span class="sc">${pct(x.mean)} match</span></div>${aud(x.clip)}
-      <div class="small muted">${x.rounds ? x.rounds.map((r, k) => `bar ${k + 1}: ${esc(r.name || "")}`).join("<br>") : "average over 32 plain samples; one is played"}</div></div>`);
-  }
-  $("steerplayers").innerHTML = pl.join("");
-  const keys = A.steer.match_keys, cs = ORDER.filter(c => p.paths[c] && p.paths[c].rounds);
-  let h = `<table><tr><th>Bar</th><th>Fact</th><th>Real song</th>${cs.map(c => `<th>${esc(p.paths[c].label)}</th>`).join("")}</tr>`;
-  for (let b = 0; b < 4; b++) keys.forEach((k, j) => {
-    const t = p.gt.bars[b][k];
-    h += `<tr>${j === 0 ? `<td rowspan="${keys.length}"><b>${b + 1}</b></td>` : ""}<td class="muted">${FACT_NAMES[k] || k}</td><td>${esc(t)}</td>${cs.map(c => {
-      const v = p.paths[c].rounds[b].facts[k]; const skip = t === "?" || t == null;
-      return `<td class="${skip ? "muted" : v === t ? "ok" : "bad"}">${esc(v)}</td>`; }).join("")}</tr>`;
-  });
-  $("steertable").innerHTML = h + `</table>`;
+// ---------------------------------------------------------------- steering with each approach's names
+const S4 = A.steer4 || {};
+let S4B = Object.keys(S4).sort((a, b) => a - b)[0], S4P = 0, s4audio = null, s4raf = null, s4playing = null;
+const NOTE = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
+$("s4intro").innerHTML = `Can a user who knows what they want get there by reading the group names? The target is the <b>real continuation</b> of the song (POP909,
+ never used to build anything). At every bar, AMT offers 256 candidate bars; each approach groups and names them; a rule that reads <b>only that approach's names</b>
+ picks the group whose name best matches what the real song does next (each checkable claim in a name counts +1 if the real bar has it, −1 if not) and keeps the group's
+ typical sample; the next bar is generated from there. All four approaches use the same rule, prefixes and number of candidates; only their groups and names differ.
+ Similarity to the real continuation, per bar and averaged: <b>facts</b> (opening chord, chord vs before, ending, melody reuse, contour, register, activity, accompaniment
+ density), <b>pitch classes</b> (cosine of the notes' pitch-class content) and <b>rhythm</b> (cosine of the onset patterns on a 16th grid).`;
+$("s4legend").innerHTML = `<span class="sw2" style="background:#d6409f"></span>melody of the chosen continuation<span class="sw2" style="background:#4f9d69"></span>accompaniment
+ <span class="sw2" style="background:var(--ink);opacity:.25"></span>real continuation (background)<span class="sw2" style="background:var(--muted)"></span>last prefix bar.
+ Above each bar: the group that was chosen; hover for all the options and their scores. Below: facts matched in that bar.`;
+function s4table() {
+  const D = S4[S4B]; if (!D) { $("s4table").innerHTML = '<span class="muted">not available yet</span>'; return; }
+  const S = D.summary, rows = CONDS.filter(c => S[c]).map(c => [P0.methods[c].label, S[c], c === "D"]);
+  if (S.free) rows.push(["Plain AMT, no choice (reference)", S.free, false]);
+  $("s4table").innerHTML = `<table><tr><th>Average over ${D.prefixes.length} prefixes, ${S4B} bars</th><th class="num">Facts matched</th><th class="num">Pitch-class similarity</th><th class="num">Rhythm similarity</th></tr>
+   ${rows.map(([l, r]) => `<tr><td>${esc(l)}</td><td class="num"><b>${pct(r.fact_match)}</b></td><td class="num">${(r.pitch_class ?? 0).toFixed(2)}</td><td class="num">${(r.rhythm ?? 0).toFixed(2)}</td></tr>`).join("")}</table>
+   <div class="small muted" style="margin-top:4px">Similarities run from 0 (unrelated) to 1 (identical). Three prefixes is a demonstration, not a statistical test; listen to the rolls below.</div>`;
 }
-
+function s4stopAll() { if (s4audio) { s4audio.pause(); s4audio = null; } cancelAnimationFrame(s4raf); s4playing = null;
+  document.querySelectorAll(".s4play").forEach(b => b.textContent = "▶ play"); document.querySelectorAll(".playhead").forEach(l => l.setAttribute("visibility", "hidden")); $("s4truth").textContent = "▶ real continuation"; }
+function s4play(key, clip, beats, lo) {
+  if (s4playing === key) { s4stopAll(); return; }
+  s4stopAll(); player.stop();
+  s4audio = new Audio(clip); s4playing = key; s4audio.play();
+  const btn = document.querySelector(`.s4play[data-k="${key}"]`); if (btn) btn.textContent = "■ stop"; if (key === "truth") $("s4truth").textContent = "■ real continuation";
+  const heads = key === "truth" ? [...document.querySelectorAll(".playhead")] : [...document.querySelectorAll(`.playhead[data-k="${key}"]`)];
+  const tick = () => { if (!s4audio) return; const t = s4audio.currentTime; let k = 0; while (k < beats.length - 2 && beats[k + 1] <= t) k++;
+    const b = lo + k + Math.min(1, Math.max(0, (t - beats[k]) / ((beats[k + 1] - beats[k]) || 1)));
+    heads.forEach(h => { h.setAttribute("x1", h.dataset.x0 * 1 + (b - lo) * h.dataset.pb); h.setAttribute("x2", h.getAttribute("x1")); h.setAttribute("visibility", "visible"); });
+    if (s4audio.ended) { s4stopAll(); return; } s4raf = requestAnimationFrame(tick); };
+  s4audio.addEventListener("playing", () => { s4raf = requestAnimationFrame(tick); }, {once: true});
+}
+function s4render() {
+  document.querySelectorAll("#s4bars button").forEach(b => b.classList.toggle("on", b.dataset.b === S4B));
+  s4table(); s4stopAll();
+  const D = S4[S4B]; if (!D || !D.prefixes.length) { $("s4rolls").innerHTML = ""; return; }
+  const p = D.prefixes[Math.min(S4P, D.prefixes.length - 1)], lo = p.lo, hi = p.hi, nb = hi - lo;
+  const all = [p.truth.notes, ...CONDS.map(c => p.conds[c].notes)].flat();
+  let pmin = Math.min(...all.map(n => n[2])) - 2, pmax = Math.max(...all.map(n => n[2])) + 2;
+  const rowh = 5.2, H = (pmax - pmin + 1) * rowh, top = 30, bottom = 18, left = 34;
+  const avail = Math.max(600, Math.min(1180, document.querySelector(".wrap").clientWidth - 40));
+  const pb = Math.max(nb > 40 ? 22 : 0, (avail - left - 6) / nb), W = left + nb * pb + 6;
+  const y = m => top + (pmax - m) * rowh, x = b => left + (b - lo) * pb;
+  const showGT = $("s4gt").checked;
+  const rect = (n, cls, extra = 0) => `<rect class="${cls}" x="${x(Math.max(n[0], lo)).toFixed(1)}" y="${(y(n[2]) - extra).toFixed(1)}" width="${Math.max(1.5, (Math.min(n[1], hi) - Math.max(n[0], lo)) * pb - 1).toFixed(1)}" height="${(rowh - 0.6 + 2 * extra).toFixed(1)}" rx="1.2"/>`;
+  let html = "";
+  for (const c of CONDS) {
+    const cd = p.conds[c];
+    let g = "";
+    for (let m = Math.ceil(pmin / 12) * 12; m <= pmax; m += 12) g += `<line x1="${left}" x2="${W - 6}" y1="${y(m) + rowh}" y2="${y(m) + rowh}" stroke="var(--line)"/><text class="axl" x="2" y="${y(m) + rowh}">C${m / 12 - 1}</text>`;
+    g += `<rect x="${x(lo)}" y="${top}" width="${4 * pb}" height="${H}" fill="var(--chip)" opacity=".55"/>`;
+    for (let b = lo; b <= hi; b++) g += `<line x1="${x(b)}" x2="${x(b)}" y1="${top}" y2="${top + H}" stroke="var(--line)" stroke-width="${b % 4 === 0 ? 1.4 : 0.5}"/>`;
+    if (showGT) g += p.truth.notes.filter(n => n[0] >= 16 - 0.05).map(n => rect(n, "gtn", 0.8)).join("");
+    g += cd.notes.map(n => rect(n, n[0] < 16 - 0.05 ? "pre" : (n[3] ? "mel" : "acc"))).join("");
+    cd.choices.forEach((ch, k) => {
+      const bx = x(16 + 4 * k), fm = cd.per_bar.fact_match ? cd.per_bar.fact_match[k] : null;
+      const tipTxt = `Chosen: ${ch.name} (score ${ch.score})` + (ch.description ? ` — ${ch.description}` : "") + `\nOptions: ` + ch.options.map(o => `${o.name} [${o.score}]`).join(" · ");
+      const label = ch.name.length * 6.2 > 4 * pb - 6 ? ch.name.slice(0, Math.max(3, Math.floor((4 * pb - 10) / 6.2))) + "…" : ch.name;
+      g += `<g><title>${esc(tipTxt)}</title><text class="barlab" x="${bx + 3}" y="${top - 8}">${esc(label)}</text></g>`;
+      if (fm != null) g += `<text class="barsc" x="${bx + 3}" y="${top + H + 13}">facts ${pct(fm)}</text>`;
+    });
+    g += `<text class="barsc" x="${x(lo) + 3}" y="${top - 8}">prefix</text>`;
+    g += `<line class="playhead" data-k="${c}" data-x0="${left}" data-pb="${pb}" x1="0" x2="0" y1="${top}" y2="${top + H}" stroke="var(--accent)" stroke-width="2" visibility="hidden"/>`;
+    const mn = cd.mean || {};
+    html += `<div class="roll"><div class="rh"><span class="nm">${esc(P0.methods[c].label)}</span><button class="b s4play" data-k="${c}">▶ play</button>
+      <span class="sc">facts ${pct(mn.fact_match)} · pitch classes ${(mn.pitch_class ?? 0).toFixed(2)} · rhythm ${(mn.rhythm ?? 0).toFixed(2)}</span></div>
+      <div class="rollsvg"><svg width="${W}" height="${top + H + bottom}" viewBox="0 0 ${W} ${top + H + bottom}" role="img" aria-label="piano roll ${c}">${g}</svg></div></div>`;
+  }
+  $("s4rolls").innerHTML = html;
+  document.querySelectorAll(".s4play").forEach(b => b.onclick = () => { const c = b.dataset.k; s4play(c, p.conds[c].clip, p.conds[c].beats, lo); });
+}
+if (Object.keys(S4).length) {
+  $("s4bars").innerHTML = Object.keys(S4).sort((a, b) => a - b).map(b => `<button data-b="${b}">${b} bars</button>`).join("");
+  $("s4bars").onclick = e => { const b = e.target.dataset.b; if (b) { S4B = b; s4render(); } };
+  const P4 = S4[S4B].prefixes;
+  $("s4sel").innerHTML = P4.map((p, i) => `<option value="${i}">${esc(short(p.id))} · ${esc(p.title || "")} · ${esc(p.key)}</option>`).join("");
+  $("s4sel").onchange = () => { S4P = +$("s4sel").value; s4render(); };
+  $("s4gt").onchange = () => s4render();
+  $("s4truth").onclick = () => { const D = S4[S4B], p = D.prefixes[Math.min(S4P, D.prefixes.length - 1)]; s4play("truth", p.truth.clip, p.truth.beats, p.lo); };
+  $("s4stop").onclick = () => s4stopAll();
+  s4render();
+} else { $("s4table").innerHTML = '<span class="muted">Steering results are being computed.</span>'; }
 </script>
 </body>
 </html>
